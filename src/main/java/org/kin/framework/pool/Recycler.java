@@ -39,11 +39,11 @@ public abstract class Recycler<T> {
     private static final Logger log = LoggerFactory.getLogger(Recycler.class);
 
     /** 最大池化对象数 */
-    private static final int MAX_CAPACITY_PER_THREAD;
+    public static final int MAX_CAPACITY_PER_THREAD;
     /** 池化比率, 每ratio个对象中只有一个会被池化, 默认是8 */
-    private static final int RATIO;
+    public static final int RATIO;
     /** 默认mpsc无锁队列的chunk size */
-    private static final int QUEUE_CHUNK_SIZE_PER_THREAD;
+    public static final int QUEUE_CHUNK_SIZE_PER_THREAD;
 
     static {
         //初始化系统属性变量
