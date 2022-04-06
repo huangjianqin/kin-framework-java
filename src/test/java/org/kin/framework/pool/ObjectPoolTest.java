@@ -13,6 +13,9 @@ import java.util.concurrent.atomic.AtomicInteger;
 public class ObjectPoolTest {
     private static final AtomicInteger ID_GENERATOR = new AtomicInteger();
 
+    /**
+     * 设置-Dkin.framework.recycler.ratio=1, 即所有对象都会被池化
+     */
     public static void main(String[] args) throws InterruptedException {
         ObjectPool<PriObject> pool = ObjectPool.newPool(h -> new PriObject(h, ID_GENERATOR.incrementAndGet()));
         System.out.println("---------------------------单线程---------------------------------------");
@@ -93,11 +96,11 @@ public class ObjectPoolTest {
         }
     }
 
-    private static class PriObject extends AbstractPooledObject {
+    private static class PriObject extends AbstractPooledObject<PriObject> {
         private final int tag = ThreadLocalRandom.current().nextInt(Integer.MAX_VALUE);
-        private int id;
+        private final int id;
 
-        public PriObject(ObjectPool.Handle handle, int id) {
+        public PriObject(ObjectPool.Handle<PriObject> handle, int id) {
             super(handle);
             this.id = id;
         }

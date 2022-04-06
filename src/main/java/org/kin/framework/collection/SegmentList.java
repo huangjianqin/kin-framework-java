@@ -275,7 +275,7 @@ public class SegmentList<T> {
     /**
      * A recyclable segment
      */
-    private final static class Segment<T> extends AbstractPooledObject {
+    private final static class Segment<T> extends AbstractPooledObject<Segment<?>> {
         /** 每个线程可复用128的{@link Segment}实例 */
         private static final ObjectPool<Segment<?>> SEGMENT_OBJECT_POOL = ObjectPool.newPool(16_384 / SEGMENT_SIZE, Segment::new);
 
@@ -300,12 +300,13 @@ public class SegmentList<T> {
         /** end offset(exclusive) */
         int pos;
 
+        @SuppressWarnings("unchecked")
         Segment() {
-            this(ObjectPool.NOOP_HANDLE);
+            this((ObjectPool.Handle<Segment<?>>) ObjectPool.NOOP_HANDLE);
         }
 
         @SuppressWarnings("unchecked")
-        Segment(ObjectPool.Handle handle) {
+        Segment(ObjectPool.Handle<Segment<?>> handle) {
             super(handle);
             elements = (T[]) new Object[SEGMENT_SIZE];
             pos = offset = 0;
