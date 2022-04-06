@@ -18,6 +18,7 @@ package org.kin.framework.concurrent;
 import com.google.common.base.Preconditions;
 import org.jctools.queues.MpscUnboundedArrayQueue;
 import org.jctools.queues.atomic.MpscUnboundedAtomicArrayQueue;
+import org.kin.framework.utils.PlatformDependent;
 import org.kin.framework.utils.SysUtils;
 import org.kin.framework.utils.UnsafeUtil;
 import org.slf4j.Logger;
@@ -110,8 +111,8 @@ public class HashedWheelTimer implements Timer {
     private final HashedWheelBucket[] wheel;
     private final int mask;
     private final CountDownLatch startTimeInitialized = new CountDownLatch(1);
-    private final Queue<HashedWheelTimeout> timeouts = UnsafeUtil.hasUnsafe() ? new MpscUnboundedArrayQueue<>(1024) : new MpscUnboundedAtomicArrayQueue<>(1024);
-    private final Queue<HashedWheelTimeout> cancelledTimeouts = UnsafeUtil.hasUnsafe() ? new MpscUnboundedArrayQueue<>(1024) : new MpscUnboundedAtomicArrayQueue<>(1024);
+    private final Queue<HashedWheelTimeout> timeouts = PlatformDependent.newMpscQueue();
+    private final Queue<HashedWheelTimeout> cancelledTimeouts = PlatformDependent.newMpscQueue();
     private final AtomicLong pendingTimeouts = new AtomicLong(0);
     private final long maxPendingTimeouts;
 
