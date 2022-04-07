@@ -119,7 +119,7 @@ public abstract class Recycler<T> {
     public final T get() {
         if (maxCapacityPerThread == 0) {
             //不使用池化
-            return newObject((ObjectPool.Handle<T>) ObjectPool.NOOP_HANDLE);
+            return newObject(ObjectPool.NOOP_HANDLE);
         }
         //获取handle pool
         LocalPool<T> localPool = threadLocal.get();
@@ -135,7 +135,7 @@ public abstract class Recycler<T> {
                 handle.set(obj);
             } else {
                 //new失败, 不池化
-                obj = newObject((ObjectPool.Handle<T>) ObjectPool.NOOP_HANDLE);
+                obj = newObject(ObjectPool.NOOP_HANDLE);
             }
         } else {
             //有可复用handle, 返回其池化对象
@@ -148,7 +148,7 @@ public abstract class Recycler<T> {
     /**
      * 实现类自定的创建池化对象方法
      */
-    protected abstract T newObject(ObjectPool.Handle<T> handle);
+    protected abstract T newObject(ObjectPool.Handle handle);
 
     /**
      * @return  获取本线程当前可用池化对象数量
@@ -162,7 +162,7 @@ public abstract class Recycler<T> {
     /**
      * 池化对象绑定的{@link org.kin.framework.pool.ObjectPool.Handle}(句柄). handle缓存了需要池化的对象
      */
-    private static final class DefaultHandle<T> implements ObjectPool.Handle<T> {
+    private static final class DefaultHandle<T> implements ObjectPool.Handle {
         /** 状态-被占用中 */
         private static final int STATE_CLAIMED = 0;
         /** 状态-可用 */
@@ -192,10 +192,7 @@ public abstract class Recycler<T> {
         }
 
         @Override
-        public void recycle(T self) {
-            if (self != value) {
-                throw new IllegalArgumentException("object does not belong to handle");
-            }
+        public void recycle() {
             //释放, 放入mpsc队列, 等待被复用
             localPool.release(this);
         }

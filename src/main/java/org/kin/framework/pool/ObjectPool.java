@@ -30,18 +30,18 @@ public abstract class ObjectPool<T> {
      * Handle for an pooled {@link Object} that will be used to notify the {@link ObjectPool} once it can
      * reuse the pooled {@link Object} again.
      */
-    public interface Handle<T> {
+    public interface Handle {
         /**
          * 复用对象
          * recycle this instance if possible and so make it ready to be reused.
          */
-        void recycle(T self);
+        void recycle();
     }
 
     /**
-     * 绑定一个{@link Handle}并在想复用时调用{@link Handle#recycle(T)}
+     * 绑定一个{@link Handle}并在想复用时调用{@link Handle#recycle()}
      * <p>
-     * Creates a new Object which references the given {@link Handle} and calls {@link Handle#recycle(T)} once
+     * Creates a new Object which references the given {@link Handle} and calls {@link Handle#recycle()} once
      * it can be re-used.
      *
      * @param <T> the type of the pooled object
@@ -51,9 +51,9 @@ public abstract class ObjectPool<T> {
          * 创建对象
          * <p>
          * Creates an returns a new {@link Object} that can be used and later recycled via
-         * {@link Handle#recycle(T)}.
+         * {@link Handle#recycle()}.
          */
-        T newObject(Handle<T> handle);
+        T newObject(Handle handle);
     }
 
     /**
@@ -78,9 +78,9 @@ public abstract class ObjectPool<T> {
 
     //------------------------------------------------------------------------
     /** do nothing的{@link Handle}实现  */
-    public static final ObjectPool.Handle<?> NOOP_HANDLE = new ObjectPool.Handle<Object>() {
+    public static final ObjectPool.Handle NOOP_HANDLE = new ObjectPool.Handle() {
         @Override
-        public void recycle(Object object) {
+        public void recycle() {
             // NOOP
         }
 
@@ -99,7 +99,7 @@ public abstract class ObjectPool<T> {
         RecyclerObjectPool(ObjectCreator<T> creator) {
             recycler = new Recycler<T>() {
                 @Override
-                protected T newObject(Handle<T> handle) {
+                protected T newObject(Handle handle) {
                     return creator.newObject(handle);
                 }
             };
@@ -108,7 +108,7 @@ public abstract class ObjectPool<T> {
         RecyclerObjectPool(int maxCapacityPerThread, ObjectCreator<T> creator) {
             recycler = new Recycler<T>(maxCapacityPerThread) {
                 @Override
-                protected T newObject(Handle<T> handle) {
+                protected T newObject(Handle handle) {
                     return creator.newObject(handle);
                 }
             };

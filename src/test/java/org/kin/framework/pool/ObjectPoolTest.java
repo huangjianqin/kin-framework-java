@@ -96,11 +96,11 @@ public class ObjectPoolTest {
         }
     }
 
-    private static class PriObject extends AbstractPooledObject<PriObject> {
+    private static class PriObject extends AbstractPooledObject {
         private final int tag = ThreadLocalRandom.current().nextInt(Integer.MAX_VALUE);
         private final int id;
 
-        public PriObject(ObjectPool.Handle<PriObject> handle, int id) {
+        public PriObject(ObjectPool.Handle handle, int id) {
             super(handle);
             this.id = id;
         }
