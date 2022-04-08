@@ -10,9 +10,9 @@ public abstract class Receiver<MSG> {
     /**
      * 接受并处理消息
      *
-     * @param mail 消息实现
+     * @param message 消息实现
      */
-    public abstract void receive(MSG mail);
+    public abstract void receive(MSG message);
 
     /**
      * Receiver初始化

@@ -1,37 +1,38 @@
 package org.kin.framework.concurrent;
 
+import org.jctools.maps.NonBlockingHashMap;
+import org.jctools.maps.NonBlockingHashSet;
 import org.kin.framework.utils.SysUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.Map;
 import java.util.Objects;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.LinkedBlockingQueue;
 
 /**
- * 底层消息处理实现是基于事件处理
- * 消息有序处理, 但不保证在同一线程下执行, 不要使用ThreadLocal
+ * 底层消息处理实现是基于event loop
+ * 消息有序处理, 但不保证在同一线程下执行, 不要使用{@link ThreadLocal}
  * 尽量不要blocking
  *
  * @author huangjianqin
  * @date 2020-04-15
- * <p>
  */
 public final class EventBasedDispatcher<KEY, MSG> extends AbstractDispatcher<KEY, MSG> {
     private static final Logger log = LoggerFactory.getLogger(EventBasedDispatcher.class);
-    /** 毒药, 终止message loop */
-    private final ReceiverData<MSG> POISON_PILL = new ReceiverData<>(null, false);
+    /** '毒药', 用于终止message loop */
+    private final InBox<MSG> POISON_PILL = new InBox<MSG>(null, false);
 
-    /** 并发数 */
+    /** 并发数, 即event loop数量 */
     private final int parallelism;
-    /** Receiver数据 */
-    private final Map<KEY, ReceiverData<MSG>> receiverDatas = new ConcurrentHashMap<>();
-    /** 等待数据处理的receivers */
-    //TODO 考虑增加标志位, 在线程安全模式下, 如果Receiver消息正在被处理, 则不需要入队, 减少队列长度, 但这样子就会存在'比较忙'的Receiver长期占用, 其他Receiver消息得不到处理的问题
-    private final LinkedBlockingQueue<ReceiverData<MSG>> pendingDatas = new LinkedBlockingQueue<>();
+    /** 注册的{@link Receiver} */
+    private final Map<KEY, InBox<MSG>> inBoxMap = new NonBlockingHashMap<>();
+    /** 需要处理消息的{@link Receiver} */
+    private final LinkedBlockingQueue<InBox<MSG>> pendingDataQueue = new LinkedBlockingQueue<>();
+    /** 标识, 如果{@link InBox}正在被处理, 则不需要入队, 减少队列长度 */
+    private final NonBlockingHashSet<InBox<MSG>> runningInboxes = new NonBlockingHashSet<>();
     /** 是否已启动message loop */
-    private volatile boolean isMessageLoopRun;
+    private volatile boolean isMessageLoopRunning;
 
     public EventBasedDispatcher(int parallelism) {
         super(ExecutionContext.forkjoin(
@@ -46,25 +47,35 @@ public final class EventBasedDispatcher<KEY, MSG> extends AbstractDispatcher<KEY
             throw new IllegalStateException("dispatcher is closed");
         }
 
-        if (Objects.isNull(key) || Objects.isNull(receiver)) {
-            throw new IllegalArgumentException("arg 'key' or 'receiver' is null");
+        if (Objects.isNull(key)) {
+            throw new IllegalArgumentException("key is null");
         }
 
-        if (Objects.nonNull(receiverDatas.putIfAbsent(key, new ReceiverData<>(receiver, enableConcurrent)))) {
-            throw new IllegalArgumentException(String.format("%s has registered", key));
+        if (Objects.isNull(receiver)) {
+            throw new IllegalArgumentException("receiver is null");
         }
 
-        ReceiverData<MSG> data = receiverDatas.get(key);
-        pendingDatas.offer(data);
+        if (Objects.nonNull(inBoxMap.putIfAbsent(key, new InBox<>(receiver, enableConcurrent)))) {
+            throw new IllegalArgumentException(String.format("receiver with key `%s` has registered", key));
+        }
 
-        //lazy init
-        if (!isMessageLoopRun) {
+        InBox<MSG> inBox = inBoxMap.get(key);
+        pendingDataQueue.offer(inBox);
+        runningInboxes.add(inBox);
+        runMessageLoop();
+    }
+
+    /**
+     * 初始化并启动message loop
+     */
+    private void runMessageLoop(){
+        if (!isMessageLoopRunning) {
             synchronized (this) {
-                if (!isMessageLoopRun) {
+                if (!isMessageLoopRunning) {
                     for (int i = 0; i < parallelism; i++) {
                         executionContext.execute(new MessageLoop());
                     }
-                    isMessageLoopRun = true;
+                    isMessageLoopRunning = true;
                 }
             }
         }
@@ -72,24 +83,35 @@ public final class EventBasedDispatcher<KEY, MSG> extends AbstractDispatcher<KEY
 
     @Override
     public void unregister(KEY key) {
-        if (Objects.isNull(key)) {
-            throw new IllegalArgumentException("arg 'key' is null");
+        if (isStopped()) {
+            return;
         }
 
-        ReceiverData<MSG> data = receiverDatas.remove(key);
-        if (Objects.nonNull(data)) {
-            data.inBox.close();
-            pendingDatas.offer(data);
+        unregister0(key);
+    }
+
+    private void unregister0(KEY key){
+        if (Objects.isNull(key)) {
+            throw new IllegalArgumentException("key is null");
+        }
+
+        InBox<MSG> inBox = inBoxMap.remove(key);
+        if (Objects.nonNull(inBox)) {
+            inBox.close();
+            if(runningInboxes.add(inBox)){
+                pendingDataQueue.offer(inBox);
+            }
         }
     }
+
 
     @Override
     public boolean isRegistered(KEY key) {
         if (isStopped()) {
-            throw new IllegalStateException("dispatcher is closed");
+            return false;
         }
 
-        return receiverDatas.containsKey(key);
+        return inBoxMap.containsKey(key);
     }
 
     @Override
@@ -98,14 +120,20 @@ public final class EventBasedDispatcher<KEY, MSG> extends AbstractDispatcher<KEY
             throw new IllegalStateException("dispatcher is closed");
         }
 
-        if (Objects.isNull(key) || Objects.isNull(message)) {
-            throw new IllegalArgumentException("arg 'key' or 'message' is null");
+        if (Objects.isNull(key)) {
+            throw new IllegalArgumentException("key is null");
         }
 
-        ReceiverData<MSG> data = receiverDatas.get(key);
-        if (Objects.nonNull(data)) {
-            data.inBox.post(new InBox.OnMessageSignal<>(message));
-            pendingDatas.offer(data);
+        if (Objects.isNull(message)) {
+            throw new IllegalArgumentException("message is null");
+        }
+
+        InBox<MSG> inBox = inBoxMap.get(key);
+        if (Objects.nonNull(inBox)) {
+            inBox.post(new InBox.ReceiverMessage<>(message));
+            if(runningInboxes.add(inBox)){
+                pendingDataQueue.offer(inBox);
+            }
         }
     }
 
@@ -116,55 +144,52 @@ public final class EventBasedDispatcher<KEY, MSG> extends AbstractDispatcher<KEY
         }
 
         if (Objects.isNull(message)) {
-            throw new IllegalArgumentException("arg 'message' is null");
+            throw new IllegalArgumentException("message is null");
         }
-        for (KEY key : receiverDatas.keySet()) {
+
+        for (KEY key : inBoxMap.keySet()) {
             postMessage(key, message);
         }
     }
 
     @Override
     protected void doClose() {
-        receiverDatas.keySet().forEach(this::unregister);
-        pendingDatas.offer(POISON_PILL);
+        inBoxMap.keySet().forEach(this::unregister0);
+        for (int i = 0; i < parallelism; i++) {
+            //terminate n个message loop
+            pendingDataQueue.offer(POISON_PILL);
+        }
 
         //help gc
-        receiverDatas.clear();
-        pendingDatas.clear();
+        inBoxMap.clear();
     }
 
     //------------------------------------------------------------------------------------------------------------------------
+    /**
+     * 消息处理loop
+     */
     private class MessageLoop implements Runnable {
         @Override
         public void run() {
             try {
                 while (true) {
-                    ReceiverData<MSG> data = pendingDatas.take();
-                    if (data == POISON_PILL) {
-                        pendingDatas.offer(POISON_PILL);
+                    InBox<MSG> inBox = pendingDataQueue.take();
+                    if (inBox == POISON_PILL) {
+                        //terminated
                         return;
                     }
-                    data.inBox.process();
+                    //防止与post操作线程安全问题, 先移除running标识, 最多多入队了一个inbox
+                    runningInboxes.remove(inBox);
+                    //消息处理
+                    inBox.process();
                 }
             } catch (InterruptedException e) {
                 //do nothing
             } catch (Exception e) {
                 log.error("", e);
-                try {
-                    //re-run
-                    executionContext.execute(new MessageLoop());
-                } finally {
-                    throw e;
-                }
+                //re-run
+                executionContext.execute(new MessageLoop());
             }
-        }
-    }
-
-    private static class ReceiverData<MSG> {
-        private final InBox<MSG> inBox;
-
-        private ReceiverData(Receiver<MSG> receiver, boolean enableConcurrent) {
-            inBox = new InBox<>(receiver, enableConcurrent);
         }
     }
 }

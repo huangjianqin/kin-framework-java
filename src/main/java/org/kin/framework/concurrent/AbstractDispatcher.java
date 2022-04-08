@@ -9,7 +9,7 @@ import java.util.concurrent.TimeUnit;
  */
 public abstract class AbstractDispatcher<KEY, MSG> implements Dispatcher<KEY, MSG> {
     /** 底层线程池 */
-    protected ExecutionContext executionContext;
+    protected final ExecutionContext executionContext;
     /** Dispatcher是否stopped */
     protected volatile boolean stopped;
 
@@ -28,14 +28,18 @@ public abstract class AbstractDispatcher<KEY, MSG> implements Dispatcher<KEY, MS
             throw new IllegalStateException("dispatcher is closed");
         }
 
-        if (Objects.isNull(key) || Objects.isNull(message)) {
-            throw new IllegalArgumentException("arg 'key' or 'message' is null");
+        if (Objects.isNull(key)) {
+            throw new IllegalArgumentException("key is null");
+        }
+
+        if (Objects.isNull(message)) {
+            throw new IllegalArgumentException("message is null");
         }
 
         if (executionContext.withSchedule()) {
             executionContext.schedule(() -> postMessage(key, message), delay, unit);
         } else {
-            throw new UnsupportedOperationException("underline ExecutionContext doesn't support scheduled");
+            throw new UnsupportedOperationException("execution context doesn't support scheduled");
         }
     }
 
@@ -45,14 +49,18 @@ public abstract class AbstractDispatcher<KEY, MSG> implements Dispatcher<KEY, MS
             throw new IllegalStateException("dispatcher is closed");
         }
 
-        if (Objects.isNull(key) || Objects.isNull(message)) {
-            throw new IllegalArgumentException("arg 'key' or 'message' is null");
+        if (Objects.isNull(key)) {
+            throw new IllegalArgumentException("key is null");
+        }
+
+        if (Objects.isNull(message)) {
+            throw new IllegalArgumentException("message is null");
         }
 
         if (executionContext.withSchedule()) {
             executionContext.scheduleAtFixedRate(() -> postMessage(key, message), initialDelay, period, unit);
         } else {
-            throw new UnsupportedOperationException("underline ExecutionContext doesn't support scheduled");
+            throw new UnsupportedOperationException("execution context doesn't support scheduled");
         }
     }
 
@@ -62,14 +70,18 @@ public abstract class AbstractDispatcher<KEY, MSG> implements Dispatcher<KEY, MS
             throw new IllegalStateException("dispatcher is closed");
         }
 
-        if (Objects.isNull(key) || Objects.isNull(message)) {
-            throw new IllegalArgumentException("arg 'key' or 'message' is null");
+        if (Objects.isNull(key)) {
+            throw new IllegalArgumentException("key is null");
+        }
+
+        if (Objects.isNull(message)) {
+            throw new IllegalArgumentException("message is null");
         }
 
         if (executionContext.withSchedule()) {
             executionContext.scheduleWithFixedDelay(() -> postMessage(key, message), initialDelay, delay, unit);
         } else {
-            throw new UnsupportedOperationException("underline ExecutionContext doesn't support scheduled");
+            throw new UnsupportedOperationException("execution context doesn't support scheduled");
         }
     }
 
@@ -86,12 +98,10 @@ public abstract class AbstractDispatcher<KEY, MSG> implements Dispatcher<KEY, MS
         stopped = true;
         doClose();
         executionContext.shutdown();
-        //help gc
-        executionContext = null;
     }
 
     @Override
-    public ExecutionContext executionContext() {
+    public final ExecutionContext executionContext() {
         return executionContext;
     }
 
