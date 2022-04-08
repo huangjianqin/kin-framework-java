@@ -1,9 +1,11 @@
 package org.kin.framework.event;
 
+import org.kin.framework.common.Ordered;
+
 import java.lang.annotation.*;
 
 /**
- * 标识事件处理具体逻辑方法, 用于spring支持方法级注册事件及其处理器
+ * 标识事件处理具体逻辑方法
  *
  * @author huangjianqin
  * @date 2019/3/1
@@ -13,4 +15,6 @@ import java.lang.annotation.*;
 @Inherited
 @Documented
 public @interface EventFunction {
+    /** event handler顺序 */
+    int order() default Ordered.LOWEST_PRECEDENCE;
 }

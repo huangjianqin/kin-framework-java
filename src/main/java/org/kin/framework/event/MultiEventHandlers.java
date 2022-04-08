@@ -1,11 +1,13 @@
 package org.kin.framework.event;
 
-import org.kin.framework.utils.OrderUtils;
+import org.kin.framework.utils.OrderedUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.LinkedList;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 /**
  * 用于支持一个event, 对应多个event handler的场景
@@ -16,8 +18,8 @@ import java.util.List;
 class MultiEventHandlers<T> implements EventHandler<T> {
     private static final Logger log = LoggerFactory.getLogger(MultiEventHandlers.class);
 
-    /** 事件处理器集合 */
-    private final List<EventHandler<T>> handlers = new LinkedList<>();
+    /** {@link EventHandler}实现类集合 */
+    private volatile List<EventHandler<T>> handlers = new ArrayList<>();
 
     @Override
     public void handle(EventBus bus, T event) throws Exception {
@@ -30,13 +32,18 @@ class MultiEventHandlers<T> implements EventHandler<T> {
         }
     }
 
-    void addHandler(EventHandler<T> handler) {
+    /**
+     * 基于copy on write更新
+     */
+    synchronized void addHandler(EventHandler<T> handler) {
+        List<EventHandler<T>> handlers = new ArrayList<>(this.handlers.size() + 1);
         handlers.add(handler);
-        OrderUtils.sort(handlers);
+        OrderedUtils.sort(handlers);
+        this.handlers = handlers;
     }
 
     //getter
     List<EventHandler<T>> getHandlers() {
-        return handlers;
+        return Collections.unmodifiableList(handlers);
     }
 }
