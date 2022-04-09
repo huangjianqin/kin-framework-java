@@ -22,10 +22,10 @@ class MultiEventHandlers<T> implements EventHandler<T> {
     private volatile List<EventHandler<T>> handlers = new ArrayList<>();
 
     @Override
-    public void handle(EventBus bus, T event) throws Exception {
-        for (EventHandler<T> handler : handlers) {
+    public void handle(EventBus eventBus, T event){
+        for (EventHandler<T> eventHandler : handlers) {
             try {
-                handler.handle(bus, event);
+                EventHandler.handleEvent(eventHandler, eventBus, event);
             } catch (Exception e) {
                 log.error("", e);
             }
@@ -37,6 +37,7 @@ class MultiEventHandlers<T> implements EventHandler<T> {
      */
     synchronized void addHandler(EventHandler<T> handler) {
         List<EventHandler<T>> handlers = new ArrayList<>(this.handlers.size() + 1);
+        handlers.addAll(this.handlers);
         handlers.add(handler);
         OrderedUtils.sort(handlers);
         this.handlers = handlers;

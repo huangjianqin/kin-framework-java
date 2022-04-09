@@ -24,6 +24,7 @@ public class DefaultEventBusTest {
     public static void main(String[] args) throws InterruptedException {
         DefaultEventBus eventBus = new DefaultEventBus();
         eventBus.register(new DefaultEventBusTest());
+        eventBus.register(new FirstEventHandler());
 
         eventBus.post(new FirstEvent());
         eventBus.post(new SecondEvent());

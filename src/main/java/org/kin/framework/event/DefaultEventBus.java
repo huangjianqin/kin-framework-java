@@ -205,10 +205,10 @@ public final class DefaultEventBus implements EventBus {
      * @param event     事件实例
      */
     private void doPost(Class<?> eventType, Object event) {
-        EventHandler handler = event2Handler.get(eventType);
-        if (handler != null) {
+        EventHandler eventHandler = event2Handler.get(eventType);
+        if (eventHandler != null) {
             try {
-                handler.handle(this, event);
+                EventHandler.handleEvent(eventHandler, this, event);
             } catch (Exception e) {
                 log.error("", e);
             }
