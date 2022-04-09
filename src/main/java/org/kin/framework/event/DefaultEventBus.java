@@ -7,6 +7,7 @@ import org.kin.framework.proxy.MethodDefinition;
 import org.kin.framework.proxy.ProxyInvoker;
 import org.kin.framework.proxy.Proxys;
 import org.kin.framework.utils.ClassUtils;
+import org.kin.framework.utils.SysUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -15,6 +16,7 @@ import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
 import java.util.Collection;
 import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
@@ -45,8 +47,12 @@ public final class DefaultEventBus implements EventBus {
     }
 
     public DefaultEventBus(boolean isEnhance) {
+        this(isEnhance, ExecutionContext.fix(SysUtils.CPU_NUM, "defaultEventBus", 2));
+    }
+
+    public DefaultEventBus(boolean isEnhance, ExecutionContext scheduler) {
         this.isEnhance = isEnhance;
-        this.scheduler = ExecutionContext.fix(1, "defaultEventBus", 2);
+        this.scheduler = scheduler;
     }
 
     @Override
@@ -65,45 +71,26 @@ public final class DefaultEventBus implements EventBus {
     }
 
     /**
-     * 从{@link EventHandler}泛型中解析出事件类
-     *
-     * @param handlerClass {@link EventHandler}实现类
-     */
-    private Class<?> parseEventType(Class<?> handlerClass) {
-        return parseEventRawType(ClassUtils.getSuperInterfacesGenericActualTypes(EventHandler.class, handlerClass).get(0));
-    }
-
-    /**
-     * 从实际类型中解析出事件类
-     *
-     * @param type 实际类型
-     */
-    private Class<?> parseEventRawType(Type type) {
-        if (type instanceof ParameterizedType) {
-            //@EventFunction注解的方法参数
-            ParameterizedType parameterizedType = (ParameterizedType) type;
-            Class<?> parameterizedRawType = (Class<?>) parameterizedType.getRawType();
-            if (Collection.class.isAssignableFrom(parameterizedRawType)) {
-                //事件合并, 获取集合的泛型
-                //以实际事件类型来注册事件处理器
-                return (Class<?>) parameterizedType.getActualTypeArguments()[0];
-            } else {
-                //事件
-                return parameterizedRawType;
-            }
-        } else {
-            //EventHandler的泛型
-            return (Class<?>) type;
-        }
-    }
-
-    /**
      * 从{@link EventHandler}实现解析出event class并注册
      */
     private void registerEventHandler(EventHandler eventHandler) {
-        Class<?> eventType = parseEventType(eventHandler.getClass());
+        Class<? extends EventHandler> eventHandlerClass = eventHandler.getClass();
+        Class<?> eventType = (Class<?>) ClassUtils.getSuperInterfacesGenericActualTypes(EventHandler.class, eventHandlerClass).get(0);
 
-        registerEventHandler(eventType, eventHandler);
+        registerEventHandler(eventType, eventHandler, eventHandlerClass.getAnnotation(EventMerge.class));
+    }
+
+    /**
+     * 注册{@link EventHandler}, 该handler可能支持事件合并
+     */
+    private void registerEventHandler(Class<?> eventType, EventHandler eventHandler, EventMerge eventMerge) {
+        if (Objects.isNull(eventMerge)) {
+            //不支持事件合并
+            registerEventHandler(eventType, eventHandler);
+        } else {
+            //支持事件合并
+            registerEventHandler(eventType, new MergedEventHandler(eventHandler, eventMerge, this));
+        }
     }
 
     /**
@@ -143,33 +130,51 @@ public final class DefaultEventBus implements EventBus {
                 continue;
             }
 
+            //事件类
             Class<?> eventType = null;
             //EventBus实现类的方法参数位置, 默认没有
             int eventBusParamIdx = 0;
-            for (int i = 1; i <= parameterTypes.length; i++) {
-                if (parameterTypes[i - 1] instanceof ParameterizedType) {
-                    //泛型参数
-                    ParameterizedType parameterizedType = (ParameterizedType) parameterTypes[i - 1];
-                    Class<?> parameterizedRawType = (Class<?>) parameterizedType.getRawType();
-                    if (EventBus.class.isAssignableFrom(parameterizedRawType)) {
-                        eventBusParamIdx = i;
-                    } else {
-                        eventType = parseEventRawType(parameterizedType);
-                    }
-                } else {
-                    //普通参数
+
+            EventMerge eventMerge = method.getAnnotation(EventMerge.class);
+            if (Objects.isNull(eventMerge)) {
+                //不支持事件合并, (EventBus,Event)
+                for (int i = 1; i <= parameterTypes.length; i++) {
+                    //普通类型
                     Class<?> parameterType = (Class<?>) parameterTypes[i - 1];
                     if (EventBus.class.isAssignableFrom(parameterType)) {
                         eventBusParamIdx = i;
                     } else {
-                        eventType = parseEventRawType(parameterType);
+                        eventType = parameterType;
+                    }
+                }
+            } else {
+                //支持事件合并, (EventBus,Collection<Event>)
+                for (int i = 1; i <= parameterTypes.length; i++) {
+                    if (parameterTypes[i - 1] instanceof ParameterizedType) {
+                        //泛型类型
+                        ParameterizedType parameterizedType = (ParameterizedType) parameterTypes[i - 1];
+                        Class<?> parameterizedRawType = (Class<?>) parameterizedType.getRawType();
+                        if (Collection.class.isAssignableFrom(parameterizedRawType)) {
+                            //事件合并, 获取集合的泛型
+                            //以实际事件类型来注册事件处理器
+                            eventType = (Class<?>) parameterizedType.getActualTypeArguments()[0];
+                        } else {
+                            throw new IllegalArgumentException("use merged event, param must be collection, but actually " + parameterizedRawType);
+                        }
+                    } else {
+                        //普通类型
+                        Class<?> parameterType = (Class<?>) parameterTypes[i - 1];
+                        if (EventBus.class.isAssignableFrom(parameterType)) {
+                            eventBusParamIdx = i;
+                        }
                     }
                 }
             }
 
             EventFunction eventFunctionAnno = method.getAnnotation(EventFunction.class);
 
-            registerEventFunc(eventType, generateEventFuncMethodInvoker(obj, method), eventBusParamIdx, eventFunctionAnno.order());
+            registerEventFunc(eventType, generateEventFuncMethodInvoker(obj, method),
+                    eventBusParamIdx, eventFunctionAnno.order(), eventMerge);
         }
     }
 
@@ -178,12 +183,12 @@ public final class DefaultEventBus implements EventBus {
      *
      * @param eventBusParamIdx {@link EventBus}实现类的方法参数位置, 默认0, 标识没有该参数
      */
-    private void registerEventFunc(Class<?> eventClass, ProxyInvoker<?> invoker, int eventBusParamIdx, int order) {
-        registerEventHandler(eventClass,
-                new EventFunctionHandler<>(
-                        invoker,
-                        eventBusParamIdx,
-                        order));
+    private void registerEventFunc(Class<?> eventType, ProxyInvoker<?> invoker, int eventBusParamIdx, int order, EventMerge eventMerge) {
+        EventFunctionHandler<?> eventHandler = new EventFunctionHandler<>(
+                invoker,
+                eventBusParamIdx,
+                order);
+        registerEventHandler(eventType, eventHandler, eventMerge);
     }
 
     /**
@@ -228,18 +233,27 @@ public final class DefaultEventBus implements EventBus {
 
     @Override
     public Future<?> schedule(Object event, long delay, TimeUnit unit) {
+        if (isStopped()) {
+            throw new IllegalStateException("event bus is stopped");
+        }
         return scheduler.schedule(() -> post(event), delay, unit);
 
     }
 
     @Override
     public Future<?> scheduleAtFixRate(Object event, long initialDelay, long period, TimeUnit unit) {
+        if (isStopped()) {
+            throw new IllegalStateException("event bus is stopped");
+        }
         return scheduler.scheduleAtFixedRate(() -> post(event), initialDelay, period, unit);
 
     }
 
     @Override
     public Future<?> scheduleWithFixedDelay(Object event, long initialDelay, long delay, TimeUnit unit) {
+        if (isStopped()) {
+            throw new IllegalStateException("event bus is stopped");
+        }
         return scheduler.scheduleWithFixedDelay(() -> post(event), initialDelay, delay, unit);
 
     }
@@ -260,12 +274,24 @@ public final class DefaultEventBus implements EventBus {
         }
 
         stopped = true;
+        for (EventHandler<?> eventHandler : event2Handler.values()) {
+            eventHandler.close();
+        }
         event2Handler.clear();
         scheduler.shutdown();
+    }
+
+    @Override
+    public void close() {
+        shutdown();
     }
 
     //getter
     public boolean isStopped() {
         return stopped;
+    }
+
+    ExecutionContext getScheduler() {
+        return scheduler;
     }
 }

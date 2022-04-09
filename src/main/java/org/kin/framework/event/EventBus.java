@@ -1,5 +1,7 @@
 package org.kin.framework.event;
 
+import org.kin.framework.Closeable;
+
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
@@ -9,7 +11,7 @@ import java.util.concurrent.TimeUnit;
  * @author 健勤
  * @date 2017/8/8
  */
-public interface EventBus {
+public interface EventBus extends Closeable {
     /**
      * 注册{@link EventHandler}
      *

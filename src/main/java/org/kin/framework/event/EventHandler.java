@@ -1,5 +1,6 @@
 package org.kin.framework.event;
 
+import org.kin.framework.Closeable;
 import org.kin.framework.common.Ordered;
 
 import java.util.Objects;
@@ -11,7 +12,7 @@ import java.util.concurrent.Executor;
  * @author 健勤
  * @date 2017/8/8
  */
-public interface EventHandler<T> extends Ordered {
+public interface EventHandler<T> extends Closeable, Ordered {
     /**
      * 事件处理逻辑
      *
@@ -26,6 +27,14 @@ public interface EventHandler<T> extends Ordered {
         return null;
     }
 
+    @Override
+    default void close(){
+        //default do nothing
+    }
+
+    /**
+     * {@link EventHandler}处理event统一处理逻辑
+     */
     @SuppressWarnings({"rawtypes", "unchecked"})
     static void handleEvent(EventHandler eventHandler, EventBus eventBus, Object event){
         Executor executor = eventHandler.executor();
@@ -34,6 +43,20 @@ public interface EventHandler<T> extends Ordered {
         }
         else{
             eventHandler.handle(eventBus, event);
+        }
+    }
+
+    /**
+     * {@link EventHandler#close()} 统一处理逻辑
+     */
+    @SuppressWarnings({"rawtypes"})
+    static void closeHandler(EventHandler eventHandler){
+        Executor executor = eventHandler.executor();
+        if (Objects.nonNull(executor)) {
+            executor.execute(eventHandler::close);
+        }
+        else{
+            eventHandler.close();
         }
     }
 }

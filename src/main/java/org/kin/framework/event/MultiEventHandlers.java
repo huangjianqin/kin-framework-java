@@ -32,6 +32,17 @@ class MultiEventHandlers<T> implements EventHandler<T> {
         }
     }
 
+    @Override
+    public void close() {
+        for (EventHandler<T> eventHandler : handlers) {
+            try {
+                EventHandler.closeHandler(eventHandler);
+            } catch (Exception e) {
+                log.error("", e);
+            }
+        }
+    }
+
     /**
      * 基于copy on write更新
      */

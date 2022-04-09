@@ -205,37 +205,41 @@ public class ExecutionContext implements ScheduledExecutorService {
     @Override
     public ScheduledFuture<?> schedule(@Nonnull Runnable command, long delay, @Nonnull TimeUnit unit) {
         Preconditions.checkNotNull(scheduler);
-        if (!isStopped) {
-            return scheduler.schedule(() -> execute(command), delay, unit);
+        if (isStopped) {
+            throw new IllegalStateException("threads is stopped");
         }
-        throw new IllegalStateException("threads is stopped");
+
+        return scheduler.schedule(() -> execute(command), delay, unit);
     }
 
     @Override
     public <V> ScheduledFuture<V> schedule(@Nonnull Callable<V> callable, long delay, @Nonnull TimeUnit unit) {
         Preconditions.checkNotNull(scheduler);
-        if (!isStopped) {
-            return scheduler.schedule(() -> submit(callable).get(), delay, unit);
+        if (isStopped) {
+            throw new IllegalStateException("threads is stopped");
         }
-        throw new IllegalStateException("threads is stopped");
+
+        return scheduler.schedule(() -> submit(callable).get(), delay, unit);
     }
 
     @Override
     public ScheduledFuture<?> scheduleAtFixedRate(@Nonnull Runnable command, long initialDelay, long period, @Nonnull TimeUnit unit) {
         Preconditions.checkNotNull(scheduler);
-        if (!isStopped) {
-            return scheduler.scheduleAtFixedRate(() -> execute(command), initialDelay, period, unit);
+        if (isStopped) {
+            throw new IllegalStateException("threads is stopped");
         }
-        throw new IllegalStateException("threads is stopped");
+
+        return scheduler.scheduleAtFixedRate(() -> execute(command), initialDelay, period, unit);
     }
 
     @Override
     public ScheduledFuture<?> scheduleWithFixedDelay(@Nonnull Runnable command, long initialDelay, long delay, @Nonnull TimeUnit unit) {
         Preconditions.checkNotNull(scheduler);
-        if (!isStopped) {
-            return scheduler.scheduleWithFixedDelay(() -> execute(command), initialDelay, delay, unit);
+        if (isStopped) {
+            throw new IllegalStateException("threads is stopped");
         }
-        throw new IllegalStateException("threads is stopped");
+
+        return scheduler.scheduleWithFixedDelay(() -> execute(command), initialDelay, delay, unit);
     }
 
     @Override
@@ -287,65 +291,73 @@ public class ExecutionContext implements ScheduledExecutorService {
 
     @Override
     public <T> Future<T> submit(@Nonnull Callable<T> task) {
-        if (!isStopped) {
-            return worker.submit(task);
+        if (isStopped) {
+            throw new IllegalStateException("threads is stopped");
         }
-        throw new IllegalStateException("threads is stopped");
+
+        return worker.submit(task);
     }
 
     @Override
     public <T> Future<T> submit(@Nonnull Runnable task, T result) {
-        if (!isStopped) {
-            return worker.submit(task, result);
+        if (isStopped) {
+            throw new IllegalStateException("threads is stopped");
         }
-        throw new IllegalStateException("threads is stopped");
+
+        return worker.submit(task, result);
     }
 
     @Override
     public Future<?> submit(@Nonnull Runnable task) {
-        if (!isStopped) {
-            return worker.submit(task);
+        if (isStopped) {
+            throw new IllegalStateException("threads is stopped");
         }
-        throw new IllegalStateException("threads is stopped");
+
+        return worker.submit(task);
     }
 
     @Override
     public <T> List<Future<T>> invokeAll(@Nonnull Collection<? extends Callable<T>> tasks) throws InterruptedException {
-        if (!isStopped) {
-            return worker.invokeAll(tasks);
+        if (isStopped) {
+            throw new IllegalStateException("threads is stopped");
         }
-        throw new IllegalStateException("threads is stopped");
+
+        return worker.invokeAll(tasks);
     }
 
     @Override
     public <T> List<Future<T>> invokeAll(@Nonnull Collection<? extends Callable<T>> tasks, long timeout, @Nonnull TimeUnit unit) throws InterruptedException {
-        if (!isStopped) {
-            return worker.invokeAll(tasks, timeout, unit);
+        if (isStopped) {
+            throw new IllegalStateException("threads is stopped");
         }
-        throw new IllegalStateException("threads is stopped");
+
+        return worker.invokeAll(tasks, timeout, unit);
     }
 
     @Override
     public <T> T invokeAny(@Nonnull Collection<? extends Callable<T>> tasks) throws InterruptedException, ExecutionException {
-        if (!isStopped) {
-            return worker.invokeAny(tasks);
+        if (isStopped) {
+            throw new IllegalStateException("threads is stopped");
         }
-        throw new IllegalStateException("threads is stopped");
+
+        return worker.invokeAny(tasks);
     }
 
     @Override
     public <T> T invokeAny(@Nonnull Collection<? extends Callable<T>> tasks, long timeout, @Nonnull TimeUnit unit) throws InterruptedException, ExecutionException, TimeoutException {
-        if (!isStopped) {
-            return worker.invokeAny(tasks, timeout, unit);
+        if (isStopped) {
+            throw new IllegalStateException("threads is stopped");
         }
-        throw new IllegalStateException("threads is stopped");
+
+        return worker.invokeAny(tasks, timeout, unit);
     }
 
     @Override
     public void execute(@Nonnull Runnable command) {
-        if (!isStopped) {
-            worker.execute(command);
+        if (isStopped) {
+            return;
         }
+        worker.execute(command);
     }
 
     public boolean withSchedule() {
