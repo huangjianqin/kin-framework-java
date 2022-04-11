@@ -142,6 +142,7 @@ public final class ThreadPoolUtils {
         private BlockingQueue<Runnable> workQueue = new LinkedBlockingQueue<>();
         private ThreadFactory threadFactory = Executors.defaultThreadFactory();
         private java.util.concurrent.RejectedExecutionHandler handler = ThreadPoolUtils.DEFAULT_REJECTED_EXECUTION_HANDLER;
+        private boolean allowCoreThreadTimeOut;
 
         private ThreadPoolBuilder() {
         }
@@ -191,19 +192,36 @@ public final class ThreadPoolUtils {
             return this;
         }
 
+        public ThreadPoolBuilder allowCoreThreadTimeOut() {
+            this.allowCoreThreadTimeOut = true;
+            return this;
+        }
+
         //---------------------------------------------build
         public ThreadPoolExecutor common() {
-            return ThreadPoolUtils.newThreadPool(this.poolName, this.enableMetric, this.coreThreads,
+            ThreadPoolExecutor threadPoolExecutor = ThreadPoolUtils.newThreadPool(this.poolName, this.enableMetric, this.coreThreads,
                     this.maximumThreads, this.keepAliveTime, this.unit, this.workQueue, this.threadFactory, this.handler);
+            afterConstruct(threadPoolExecutor);
+            return threadPoolExecutor;
         }
 
         public EagerThreadPoolExecutor eager() {
-            return eager(0);
+            EagerThreadPoolExecutor threadPoolExecutor = eager(0);
+            afterConstruct(threadPoolExecutor);
+            return threadPoolExecutor;
         }
 
         public EagerThreadPoolExecutor eager(int queueSize) {
-            return ThreadPoolUtils.newEagerThreadPool(this.poolName, this.enableMetric, this.coreThreads,
+            EagerThreadPoolExecutor threadPoolExecutor = ThreadPoolUtils.newEagerThreadPool(this.poolName, this.enableMetric, this.coreThreads,
                     this.maximumThreads, this.keepAliveTime, this.unit, queueSize, this.threadFactory, this.handler);
+            afterConstruct(threadPoolExecutor);
+            return threadPoolExecutor;
+        }
+
+        private void afterConstruct(ThreadPoolExecutor threadPoolExecutor) {
+            if (allowCoreThreadTimeOut) {
+                threadPoolExecutor.allowCoreThreadTimeOut(true);
+            }
         }
     }
 
@@ -213,6 +231,8 @@ public final class ThreadPoolUtils {
         private int coreThreads = SysUtils.getSuitableThreadNum();
         private ThreadFactory threadFactory = Executors.defaultThreadFactory();
         private java.util.concurrent.RejectedExecutionHandler handler = ThreadPoolUtils.DEFAULT_REJECTED_EXECUTION_HANDLER;
+        private boolean allowCoreThreadTimeOut;
+        private boolean setRemoveOnCancelPolicy;
 
         private ScheduledThreadPoolBuilder() {
         }
@@ -242,9 +262,26 @@ public final class ThreadPoolUtils {
             return this;
         }
 
+        public ScheduledThreadPoolBuilder allowCoreThreadTimeOut() {
+            this.allowCoreThreadTimeOut = true;
+            return this;
+        }
+
+        public ScheduledThreadPoolBuilder setRemoveOnCancelPolicy() {
+            this.setRemoveOnCancelPolicy = true;
+            return this;
+        }
+
         public ScheduledThreadPoolExecutor build() {
-            return ThreadPoolUtils.newScheduledThreadPool(this.poolName, this.enableMetric, this.coreThreads,
+            ScheduledThreadPoolExecutor scheduledThreadPoolExecutor = ThreadPoolUtils.newScheduledThreadPool(this.poolName, this.enableMetric, this.coreThreads,
                     this.threadFactory, this.handler);
+            if (allowCoreThreadTimeOut) {
+                scheduledThreadPoolExecutor.allowCoreThreadTimeOut(true);
+            }
+            if (setRemoveOnCancelPolicy) {
+                scheduledThreadPoolExecutor.setRemoveOnCancelPolicy(true);
+            }
+            return scheduledThreadPoolExecutor;
         }
     }
 

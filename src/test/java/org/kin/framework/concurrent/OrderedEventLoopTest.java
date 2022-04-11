@@ -15,7 +15,7 @@ public class OrderedEventLoopTest {
 
     public static void main(String[] args) throws InterruptedException {
         int num = 10;
-        ExecutionContext executionContext = ExecutionContext.cache("worker", 1, "worker_scheudle");
+        ExecutionContext executionContext = ExecutionContext.cache("worker", 1);
         FixOrderedEventLoopGroup pool = new FixOrderedEventLoopGroup(num, executionContext, OrderedEventLoop::new);
 
         OrderedEventLoop eventLoop = pool.next(0);
@@ -29,7 +29,7 @@ public class OrderedEventLoopTest {
         AtomicInteger successCounter = new AtomicInteger();
         for (int j = 0; j < 5; j++) {
             executionContext.execute(() -> {
-                for (int i = 0; i < 1_000_000; i++) {
+                for (int i = 0; i < 10_000; i++) {
                     eventLoop.execute(() -> add());
                     eventLoop.receive(p -> add());
                     eventLoop.schedule(() -> add(), 1, TimeUnit.SECONDS);
