@@ -360,7 +360,22 @@ public class ExecutionContext implements ScheduledExecutorService {
         worker.execute(command);
     }
 
+    /**
+     * 是否包含调度线程
+     */
     public boolean withSchedule() {
         return Objects.nonNull(scheduler) && !scheduler.isShutdown();
+    }
+
+    /**
+     * 针对{@link ThreadPoolExecutor}和{@link ScheduledThreadPoolExecutor}允许core thread超时
+     */
+    public void allowCoreThreadTimeOut(){
+        if (worker instanceof ThreadPoolExecutor) {
+            ((ThreadPoolExecutor) worker).allowCoreThreadTimeOut(true);
+        }
+        if (Objects.nonNull(scheduler) && scheduler instanceof ScheduledThreadPoolExecutor) {
+            ((ScheduledThreadPoolExecutor) scheduler).allowCoreThreadTimeOut(true);
+        }
     }
 }
