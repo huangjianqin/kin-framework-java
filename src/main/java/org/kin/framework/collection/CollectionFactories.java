@@ -30,12 +30,15 @@ public class CollectionFactories extends AbstractFactories<CollectionFactory<?>>
         factories.put(Collection.class, ArrayList::new);
         factories.put(List.class, ArrayList::new);
         factories.put(ArrayList.class, ArrayList::new);
+        factories.put(ClassUtils.getClass("java.util.Arrays$ArrayList"), ArrayList::new);
+        factories.put(ClassUtils.getClass("java.util.Collections$SingletonList"), ArrayList::new);
         factories.put(LinkedList.class, LinkedList::new);
         factories.put(CopyOnWriteArrayList.class, CopyOnWriteArrayList::new);
         factories.put(Stack.class, Stack::new);
         factories.put(Vector.class, Vector::new);
         factories.put(Set.class, HashSet::new);
         factories.put(HashSet.class, HashSet::new);
+        factories.put(ClassUtils.getClass("java.util.Collections$SingletonSet"), HashSet::new);
         factories.put(LinkedHashSet.class, LinkedHashSet::new);
         factories.put(SortedSet.class, TreeSet::new);
         factories.put(NavigableSet.class, TreeSet::new);

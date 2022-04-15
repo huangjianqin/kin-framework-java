@@ -32,26 +32,8 @@ public abstract class AbstractFactories<F extends Factory> {
         if (Objects.isNull(type)) {
             throw new IllegalArgumentException("type is null!");
         }
-        // 这里之所以要遍历该类所有父类和实现接口, 因为在处理动态类型(Object)时, 有可能实例是一些不在访问范围内(private)的Collection或Map实现,
-        // 比如java.util.Arrays$ArrayList, 可以正常write, 但我们无法反序列成java.util.Arrays$ArrayList,
-        // 不过, 我们可以序列化成java.util.ArrayList, 只要内容一致即可
-        // 获取所有继承父类(包含自己)
-        List<Class<?>> classes = ClassUtils.getAllClasses(type);
-        for (Class<?> claxx : classes) {
-            F ret = factories.get(claxx);
-            if (Objects.nonNull(ret)) {
-                return ret;
-            }
 
-            // 获取所有实现接口
-            for (Class<?> interfaceClass : claxx.getInterfaces()) {
-                ret = factories.get(interfaceClass);
-                if (Objects.nonNull(ret)) {
-                    return ret;
-                }
-            }
-        }
-        throw new IllegalArgumentException(String.format("can't not find factory for type '%s'", type.getCanonicalName()));
+        return factories.get(type);
     }
 
     /**

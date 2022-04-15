@@ -29,6 +29,7 @@ public class MapFactories extends AbstractFactories<MapFactory<?>> {
 
         //内置
         factories.put(Map.class, HashMap::new);
+        factories.put(ClassUtils.getClass("java.util.Collections$SingletonMap"), HashMap::new);
         factories.put(SortedMap.class, TreeMap::new);
         factories.put(NavigableMap.class, TreeMap::new);
         factories.put(HashMap.class, HashMap::new);
