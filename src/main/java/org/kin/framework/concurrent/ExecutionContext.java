@@ -100,7 +100,7 @@ public class ExecutionContext implements ScheduledExecutorService {
     }
 
     public static ExecutionContext cache(String workerNamePrefix) {
-        return cache(0, Integer.MAX_VALUE, workerNamePrefix, 0, null);
+        return cache(0, Integer.MAX_VALUE, workerNamePrefix, 0, workerNamePrefix.concat(DEFAULT_SCHEDULER_NAME));
     }
 
     public static ExecutionContext cache(int maxParallelism, String workerNamePrefix) {
