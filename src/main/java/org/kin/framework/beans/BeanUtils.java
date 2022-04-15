@@ -28,7 +28,7 @@ public final class BeanUtils {
     static {
         Class<?> byteBuddyClass = null;
         try {
-            byteBuddyClass = Class.forName("net.bytebuddy.ByteBuddy");
+            byteBuddyClass = ClassUtils.getClass("net.bytebuddy.ByteBuddy");
         } catch (Exception e) {
             //ignore
         }

@@ -474,13 +474,7 @@ public final class ExtensionLoader<E> {
                                           Map<String, ExtensionMetaData<E>> name2ExtensionMetaData,
                                           @Nullable Map<Byte, ExtensionMetaData<E>> code2ExtensionMetaData) {
         for (String implClassName : implClassNames) {
-            Class<? extends E> implClass;
-            try {
-                implClass = (Class<? extends E>) Class.forName(implClassName, false, classLoader);
-            } catch (ClassNotFoundException e) {
-                ExceptionUtils.throwExt(e);
-                return;
-            }
+            Class<? extends E> implClass = ClassUtils.getClass(implClassName, false, classLoader);
 
             //检查实现类是否继承(实现)extension class
             if (!extensionClass.isAssignableFrom(implClass)) {

@@ -412,7 +412,7 @@ public final class UnsafeUtil {
     private static Object getUnsafe0() {
         Object unsafe;
         try {
-            Class<?> unsafeClass = Class.forName("sun.misc.Unsafe");
+            Class<?> unsafeClass = ClassUtils.getClass("sun.misc.Unsafe", true);
             Field unsafeField = unsafeClass.getDeclaredField("theUnsafe");
             unsafeField.setAccessible(true);
             unsafe = unsafeField.get(null);

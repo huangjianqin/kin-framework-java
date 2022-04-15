@@ -154,8 +154,8 @@ public final class JavassistFactory implements ProxyFactory {
 
         Class<?> realProxyClass = null;
         try {
-            realProxyClass = Class.forName(proxyCtClassName);
-        } catch (ClassNotFoundException e) {
+            realProxyClass = ClassUtils.getClass(proxyCtClassName);
+        } catch (Exception e) {
             //ignore
         }
 
@@ -289,8 +289,8 @@ public final class JavassistFactory implements ProxyFactory {
             String proxyCtClassName) {
         Class<?> realProxyClass = null;
         try {
-            realProxyClass = Class.forName(proxyCtClassName);
-        } catch (ClassNotFoundException e) {
+            realProxyClass = ClassUtils.getClass(proxyCtClassName);
+        } catch (Exception e) {
             //ignore
         }
 

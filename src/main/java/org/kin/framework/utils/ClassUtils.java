@@ -6,6 +6,7 @@ import org.springframework.util.Assert;
 import sun.reflect.generics.reflectiveObjects.ParameterizedTypeImpl;
 import sun.reflect.generics.reflectiveObjects.TypeVariableImpl;
 
+import javax.annotation.Nonnull;
 import java.io.IOException;
 import java.lang.reflect.*;
 import java.net.JarURLConnection;
@@ -123,14 +124,45 @@ public class ClassUtils {
         throw new IllegalStateException("encounter unknown error");
     }
 
-    public static Class<?> getClass(String className) {
-        if (StringUtils.isBlank(className)) {
-            return null;
+    /**
+     * 根据指定类名加载类
+     */
+    public static <T> Class<T> getClass(String className) {
+        return getClass(className, false);
+    }
+
+    /**
+     * 根据指定类名加载类
+     * @param initialize 是否对class进行初始化
+     */
+    public static <T> Class<T> getClass(String className, boolean initialize) {
+        return getClass(className, initialize, Thread.currentThread().getContextClassLoader());
+    }
+
+    /**
+     * 根据指定类名加载类
+     * @param initialize 是否对class进行初始化
+     * @param classLoader 指定classloader
+     */
+    @SuppressWarnings("unchecked")
+    public static <T> Class<T> getClass(String className, boolean initialize, ClassLoader classLoader) {
+        if(!initialize){
+            try {
+                return (Class<T>) classLoader.loadClass(className);
+            } catch (ClassNotFoundException e) {
+                try {
+                    return (Class<T>) Class.forName(className);
+                } catch (ClassNotFoundException ex) {
+                    ExceptionUtils.throwExt(ex);
+                }
+            }
         }
-        try {
-            return Class.forName(className);
-        } catch (ClassNotFoundException e) {
-            ExceptionUtils.throwExt(e);
+        else{
+            try {
+                return (Class<T>) Class.forName(className, initialize, classLoader);
+            } catch (ClassNotFoundException ex) {
+                ExceptionUtils.throwExt(ex);
+            }
         }
 
         throw new IllegalStateException("encounter unknown error");
@@ -902,7 +934,7 @@ public class ClassUtils {
      */
     public static boolean isClassPresent(String className) {
         try {
-            Class.forName(className);
+            getClass(className);
             return true;
         } catch (Exception e) {
             return false;
