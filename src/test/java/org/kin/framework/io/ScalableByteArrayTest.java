@@ -15,8 +15,6 @@ public class ScalableByteArrayTest {
             array.writeByte(i);
         }
         System.out.println("-----------------------------------------------1");
-        array.toRead();
-
         System.out.println(array);
         System.out.println(array.writableBytes());
         System.out.println(array.readableBytes());
@@ -43,19 +41,7 @@ public class ScalableByteArrayTest {
         System.out.println(array.readerIndex());
 
         System.out.println("-----------------------------------------------2");
-        array.toRead();
-        read.clear();
-        for (int i = 0; i < 128; i++) {
-            read.add(array.readByte());
-        }
-
-        System.out.println(read);
-        System.out.println(array.writableBytes());
-        System.out.println(array.readableBytes());
-        System.out.println(array.readerIndex());
-
-        System.out.println("-----------------------------------------------3");
-        array.toWrite();
+        array.clear();
         System.out.println(array);
 
         for (int i = 0; i < 128; i++) {
@@ -65,17 +51,23 @@ public class ScalableByteArrayTest {
         array.writeByte(1);
         array.writeByte(2);
         array.writeByte(3);
-        array.toRead();
 
         System.out.println(array);
         System.out.println(Arrays.toString(array.toByteArray()));
 
-        System.out.println("-----------------------------------------------5");
-        array.toWrite();
+        System.out.println("-----------------------------------------------3");
+        array.clear();
         byte[] bytes = new byte[]{1, 3, 5, 7, 9};
         array.writeBytes(bytes);
         array.writeBytes(bytes, 2, 2);
         array.writeByte(-100);
         System.out.println(array);
+
+        System.out.println("-----------------------------------------------4");
+        array.flip();
+        System.out.println(array);
+
+        System.out.println("-----------------------------------------------5");
+
     }
 }

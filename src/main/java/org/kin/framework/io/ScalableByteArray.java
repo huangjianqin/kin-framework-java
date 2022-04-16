@@ -174,23 +174,24 @@ public final class ScalableByteArray implements Input, Output {
     }
 
     /**
-     * 写操作完成, 预备读
+     * 当前节点数组剩余可写字节数
      */
-    public void toRead() {
-        //重置read index
-        readArrOffset = 0;
-        readOffset = 0;
-        //记录本次写入的字节数
-        ewma.insert(readableBytes());
+    public int nowArrayWritableBytes() {
+        return allocSize - writeOffset;
     }
 
     /**
-     * 预备写
+     * 预备从头写
      */
-    public void toWrite() {
-        //重置read index和write index
+    public void clear() {
+        //先重置read index
         readArrOffset = 0;
         readOffset = 0;
+
+        //记录clear之前写入的字节数
+        ewma.insert(readableBytes());
+
+        //后重置write index
         writeArrOffset = 0;
         writeOffset = 0;
 
@@ -208,6 +209,24 @@ public final class ScalableByteArray implements Input, Output {
             newByteArrays.add(byteArrays.get(i));
         }
         byteArrays = newByteArrays;
+    }
+
+    /**
+     * 移除无效写入的数组节点, 并切换到预备读
+     */
+    public void flip(){
+        if(writeOffset == 0){
+            //数组还没写入bytes
+            byteArrays = new ArrayList<>(byteArrays.subList(0, writeArrOffset));
+        }
+        else{
+            //数组已写入bytes
+            byteArrays = new ArrayList<>(byteArrays.subList(0, writeArrOffset + 1));
+        }
+
+        //重置read index
+        readArrOffset = 0;
+        readOffset = 0;
     }
 
     /**
