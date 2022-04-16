@@ -73,6 +73,13 @@ public final class ScalableByteArray implements Input, Output {
      * 获取当前写所在数组节点index
      */
     private int getWriteArrOffset() {
+        return getWriteArrOffset(writerIndex);
+    }
+
+    /**
+     * 获取当前写所在数组节点index
+     */
+    private int getWriteArrOffset(int writerIndex) {
         return writerIndex / allocSize;
     }
 
@@ -206,6 +213,24 @@ public final class ScalableByteArray implements Input, Output {
     }
 
     /**
+     * 返回write index
+     */
+    public int writerIndex() {
+        return writerIndex;
+    }
+
+    /**
+     * 设置write index
+     */
+    public void writerIndex(int writerIndex) {
+        int limit = byteArrays.size() * allocSize;
+        if(writerIndex >= limit){
+            throw new IndexOutOfBoundsException("writerIndex >= " + limit);
+        }
+        this.writerIndex = writerIndex;
+    }
+
+    /**
      * 预备从头写
      */
     public void clear() {
@@ -319,6 +344,28 @@ public final class ScalableByteArray implements Input, Output {
             func.writeBytes(bytes, bytesReadOffset, len);
 
             readerIndex += len;
+        }
+    }
+
+    /**
+     * 保证足够可写字节数
+     */
+    public void ensureWritableBytes(int writableBytes){
+        int curWritableBytes = byteArrays.size() * allocSize - writerIndex;
+        if(curWritableBytes >= writableBytes){
+            //本来就够了
+            return;
+        }
+
+        //需要补足的字节数
+        int newWriteIndex = this.writerIndex + writableBytes;
+        int newWriteArrOffset = getWriteArrOffset(newWriteIndex);
+        int writeArrOffset = getWriteArrOffset();
+        int needArray = newWriteArrOffset - writeArrOffset;
+        if(needArray > 0){
+            for (int i = 0; i < needArray; i++) {
+                expand();
+            }
         }
     }
 

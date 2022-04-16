@@ -14,6 +14,7 @@ public class ScalableByteArrayTest {
         for (int i = 0; i < 256; i++) {
             array.writeByte(i);
         }
+
         System.out.println("-----------------------------------------------1");
         System.out.println(array);
         System.out.println(array.writableBytes());
@@ -68,6 +69,15 @@ public class ScalableByteArrayTest {
         System.out.println(array);
 
         System.out.println("-----------------------------------------------5");
+        array.ensureWritableBytes(5);
+        array.writerIndex(12);
+        array.writeByte(-101);
 
+        array.ensureWritableBytes(5);
+        array.writerIndex(16);
+        array.writeByte(-102);
+        System.out.println(array);
+
+        System.out.println("-----------------------------------------------6");
     }
 }
