@@ -3,6 +3,7 @@ package org.kin.framework.io;
 import org.kin.framework.utils.FixEwma;
 import org.kin.framework.utils.Maths;
 
+import javax.annotation.Nullable;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -21,14 +22,10 @@ public final class ScalableByteArray implements Input, Output {
     private final int allocSize;
     /** 底层byte[] list */
     private List<byte[]> byteArrays = new ArrayList<>();
-    /** 当前读的array offset */
-    private int readArrOffset;
-    /** 下一次读的offset */
-    private int readOffset;
-    /** 当前写的array offset */
-    private int writeArrOffset;
-    /** 下一次写的offset */
-    private int writeOffset;
+    /** 下一reader index */
+    private int readerIndex;
+    /** 下一writer index */
+    private int writerIndex;
     /**
      * 基于历史分配容量, 预测下次写的容量, 进而防止突发高容量而导致分配过多byte[], 当预测容量小于, 可以适当释放部分byte[]
      * todo β值可修改
@@ -51,24 +48,56 @@ public final class ScalableByteArray implements Input, Output {
     }
 
     /**
-     * 校验是否read index <= write index
+     * 获取当前读所在数组节点index
      */
-    private void validReadIndex(int readArrOffset, int readOffset) {
-        if (readArrOffset > writeArrOffset || (readArrOffset == writeArrOffset && readOffset > writeOffset)) {
-            throw new IndexOutOfBoundsException(String.format("readArrOffset: %d, readOffset: %d, writeArrOffset: %d, writeOffset: %d",
-                    readArrOffset, readOffset, writeArrOffset, writeOffset));
+    private int getReadArrOffset() {
+        return getReadArrOffset(readerIndex);
+    }
+
+    private int getReadArrOffset(int readerIndex) {
+        return readerIndex / allocSize;
+    }
+
+    /**
+     * 获取当前读所在数组offset
+     */
+    private int getBytesReadOffset() {
+        return getBytesReadOffset(readerIndex);
+    }
+
+    private int getBytesReadOffset(int readerIndex) {
+        return readerIndex % allocSize;
+    }
+
+    /**
+     * 获取当前写所在数组节点index
+     */
+    private int getWriteArrOffset() {
+        return writerIndex / allocSize;
+    }
+
+    /**
+     * 获取当前写所在数组offset
+     */
+    private int getBytesWriteOffset() {
+        return writerIndex % allocSize;
+    }
+
+    /**
+     * 校验是否reader index <= writer index
+     */
+    private void validReaderIndex(int readerIndex) {
+        if (readerIndex > writerIndex) {
+            throw new IndexOutOfBoundsException(String.format("readerIndex: %d, writeOffset: %d", readerIndex, writerIndex));
         }
     }
 
     @Override
     public byte readByte() {
-        validReadIndex(readArrOffset, readOffset);
-        byte[] bytes = byteArrays.get(readArrOffset);
-        byte ret = bytes[readOffset++];
-        if (readOffset >= allocSize) {
-            readArrOffset++;
-            readOffset = 0;
-        }
+        validReaderIndex(readerIndex);
+        byte[] bytes = byteArrays.get(getReadArrOffset());
+        byte ret = bytes[getBytesReadOffset()];
+        readerIndex++;
         return ret;
     }
 
@@ -91,13 +120,12 @@ public final class ScalableByteArray implements Input, Output {
 
     @Override
     public int readableBytes() {
-        //思路: 中间-最后可写+第一剩余未读
-        return (writeArrOffset - readArrOffset) * allocSize - (allocSize - writeOffset) + (allocSize - readOffset);
+        return writerIndex - readerIndex;
     }
 
     @Override
     public int readerIndex() {
-        return readArrOffset * allocSize + readOffset;
+        return readerIndex;
     }
 
     @Override
@@ -105,14 +133,8 @@ public final class ScalableByteArray implements Input, Output {
         if (readerIndex < 0) {
             throw new IndexOutOfBoundsException("readerIndex < 0");
         }
-        //重置reader index, 根据单个byte[]容量计算即可
-        int readArrOffset = readerIndex / allocSize;
-        int readOffset = readerIndex % allocSize;
-        //计算完后, 校验一下
-        validReadIndex(readArrOffset, readOffset);
-        //校验成功, 则set
-        this.readArrOffset = readArrOffset;
-        this.readOffset = readOffset;
+        validReaderIndex(readerIndex);
+        this.readerIndex = readerIndex;
         return this;
     }
 
@@ -123,21 +145,22 @@ public final class ScalableByteArray implements Input, Output {
 
     @Override
     public void writeByte(int value) {
-        byte[] bytes = byteArrays.get(writeArrOffset);
-        bytes[writeOffset++] = (byte) value;
-        if (writeOffset >= allocSize) {
+        int bytesWriteOffset = getBytesWriteOffset();
+        int writeArrOffset = getWriteArrOffset();
+        if (writeArrOffset + 1 > byteArrays.size()) {
             //超过单个byte[]容量
             expand();
         }
+        bytesWriteOffset = getBytesWriteOffset();
+
+        byte[] bytes = byteArrays.get(writeArrOffset);
+        bytes[bytesWriteOffset] = (byte) value;
+        writerIndex++;
     }
 
     private void expand() {
-        writeArrOffset++;
-        writeOffset = 0;
-        if (writeArrOffset >= byteArrays.size()) {
-            //列表byteArrays没有多余的byte[]可用, 则动态create
-            byteArrays.add(new byte[allocSize]);
-        }
+        //列表byteArrays没有多余的byte[]可用, 则动态create
+        byteArrays.add(new byte[allocSize]);
     }
 
     @Override
@@ -151,49 +174,49 @@ public final class ScalableByteArray implements Input, Output {
         if (len <= 0) {
             throw new IllegalArgumentException("len is less than or equal to 0");
         }
-        do {
-            byte[] bytes = byteArrays.get(writeArrOffset);
-            int writableBytes = allocSize - writeOffset;
-            int writeBytes = Math.min(writableBytes, len);
-            System.arraycopy(value, startIdx, bytes, writeOffset, writeBytes);
-            len -= writeBytes;
-            startIdx += writeBytes;
-            if (writeBytes >= writableBytes) {
+
+        int bytesWriteOffset = getBytesWriteOffset();
+        int bytesRemaining = allocSize - bytesWriteOffset;
+        if (bytesRemaining >= len) {
+            //当前bytes有足够空间
+            byte[] bytes = byteArrays.get(getWriteArrOffset());
+            System.arraycopy(value, startIdx, bytes, bytesWriteOffset, len);
+        } else {
+            //当前bytes没有足够空间, 写期间需要扩容
+            int writeLen = bytesRemaining;
+            int writeOffset = bytesWriteOffset;
+            while (len > 0) {
+                byte[] bytes = byteArrays.get(getWriteArrOffset());
+                System.arraycopy(value, startIdx, bytes, writeOffset, writeLen);
+
                 expand();
-            } else {
-                writeOffset += writeBytes;
+                startIdx += writeLen;
+                len -= writeLen;
+                writeOffset = 0;
+                writeLen = Math.min(len, allocSize);
             }
-        } while (len > 0);
+        }
+        writerIndex += len;
     }
 
     @Override
     public int writableBytes() {
-        //思路: 前面+最后一个
-//        return allocSize - writeOffset + (byteArrays.size() - writeArrOffset - 1) * allocSize;
+        //默认无上限
         return Integer.MAX_VALUE;
-    }
-
-    /**
-     * 当前节点数组剩余可写字节数
-     */
-    public int nowArrayWritableBytes() {
-        return allocSize - writeOffset;
     }
 
     /**
      * 预备从头写
      */
     public void clear() {
-        //先重置read index
-        readArrOffset = 0;
-        readOffset = 0;
+        //先重置reader index
+        readerIndex = 0;
 
         //记录clear之前写入的字节数
         ewma.insert(readableBytes());
 
-        //后重置write index
-        writeArrOffset = 0;
-        writeOffset = 0;
+        //后重置writer index
+        writerIndex = 0;
 
         //预测下次write size, 并尝试释放当前byteArrays中多余的byte[]
         int predictWriteSize = (int) this.ewma.getEwma();
@@ -214,87 +237,137 @@ public final class ScalableByteArray implements Input, Output {
     /**
      * 移除无效写入的数组节点, 并切换到预备读
      */
-    public void flip(){
-        if(writeOffset == 0){
+    public void flip() {
+        int writeArrOffset = getWriteArrOffset();
+        if (writerIndex == 0) {
             //数组还没写入bytes
             byteArrays = new ArrayList<>(byteArrays.subList(0, writeArrOffset));
-        }
-        else{
+        } else {
             //数组已写入bytes
             byteArrays = new ArrayList<>(byteArrays.subList(0, writeArrOffset + 1));
         }
 
         //重置read index
-        readArrOffset = 0;
-        readOffset = 0;
+        readerIndex = 0;
     }
 
     /**
      * 将readable bytes转换成单个byte[]
      */
     public byte[] toByteArray() {
-        if (writeArrOffset == 0 && writeOffset == 0) {
+        if (writerIndex == 0) {
             return new byte[0];
         }
-        byte[] ret = new byte[readableBytes()];
-        int readArrOffset = this.readArrOffset;
-        int readOffset = this.readOffset;
 
-        int retOffset = 0;
-        while (readArrOffset <= writeArrOffset) {
-            int limit;
-            if (readArrOffset == writeArrOffset) {
-                //最后一个
-                if (readOffset == writeOffset) {
-                    //相等, 则结束
-                    break;
-                }
-                limit = writeOffset;
-            } else {
-                //前面的byte[]复制以allocSize为limit即可
-                limit = allocSize;
-            }
-            byte[] bytes = byteArrays.get(readArrOffset);
-            //copy bytes len
-            int len = limit - readOffset;
-            //copy byte[]
-            System.arraycopy(bytes, readOffset, ret, retOffset, len);
-            //offset ad
-            retOffset += len;
-            //下一个byte[]
-            readArrOffset++;
-            readOffset = 0;
-        }
-
-        return ret;
+        byte[] bytes = new byte[readableBytes()];
+        walkReadableBytes(new ByteArrayWriteBytesFunc(bytes));
+        return bytes;
     }
 
     /**
      * 将readable bytes转换成预备可读的{@link ByteBuffer}
      */
+    @Nullable
+    public ByteBuffer toByteBuffer() {
+        return toByteBuffer(false);
+    }
+
+    /**
+     * 将readable bytes转换成预备可读的{@link ByteBuffer}
+     */
+    @Nullable
     public ByteBuffer toByteBuffer(boolean direct) {
-        byte[] bytes = toByteArray();
-        int len = bytes.length;
+        if (writerIndex == 0) {
+            return null;
+        }
+
+        int len = readableBytes();
         ByteBuffer byteBuffer;
         if (direct) {
             byteBuffer = ByteBuffer.allocateDirect(len);
         } else {
             byteBuffer = ByteBuffer.allocate(len);
         }
-        byteBuffer.put(bytes);
+
+        walkReadableBytes(byteBuffer::put);
         ByteBufferUtils.toReadMode(byteBuffer);
         return byteBuffer;
     }
 
+    /**
+     * 遍历所有可读字节数组
+     */
+    private void walkReadableBytes(WriteBytesFunc func){
+        int readerIndex = this.readerIndex;
+        int writeArrOffset = getWriteArrOffset();
+        int bytesWriteOffset = getBytesWriteOffset();
+
+        while (readerIndex < writerIndex) {
+            int readArrOffset = getReadArrOffset(readerIndex);
+            byte[] bytes = byteArrays.get(readArrOffset);
+            int bytesReadOffset = getBytesReadOffset(readerIndex);
+
+            int len;
+            //copy byte[]
+            if (readArrOffset == writeArrOffset) {
+                //reader index和writer index在同一bytes
+                len = bytesWriteOffset - bytesReadOffset;
+            } else {
+                //reader index和writer index不在同一bytes
+                len = allocSize - bytesReadOffset;
+            }
+            func.writeBytes(bytes, bytesReadOffset, len);
+
+            readerIndex += len;
+        }
+    }
+
     @Override
     public String toString() {
-        return "DynamicExpandByteArray{" +
+        return "ScalableByteArray{" +
                 "allocSize=" + allocSize +
                 ", byteArrays=" + byteArrays.stream().map(Arrays::toString).collect(Collectors.toList()) +
-                ", readArrOffset=" + readArrOffset +
-                ", readOffset=" + readOffset +
-                ", writeArrOffset=" + writeArrOffset +
-                ", writeOffset=" + writeOffset +
+                ", readerIndex=" + readerIndex +
+                ", writerIndex=" + writerIndex +
                 '}';
+    }
+
+    //------------------------------------------------------------------------------------
+
+    /**
+     * 将一块bytes写入目标bytes统一处理
+     */
+    @FunctionalInterface
+    private interface WriteBytesFunc{
+        /**
+         * 写bytes
+         * @param src   源数组
+         * @param offset    源数组起始offset
+         * @param length    write bytes长度
+         */
+        void writeBytes(byte[] src, int offset, int length);
+    }
+
+    /**
+     * 基于bytes的{@link WriteBytesFunc}实现
+     */
+    private static class ByteArrayWriteBytesFunc implements WriteBytesFunc{
+        private final byte[] bytes;
+        private int offset;
+
+        public ByteArrayWriteBytesFunc(byte[] bytes) {
+            this.bytes = bytes;
+        }
+
+        @Override
+        public void writeBytes(byte[] src, int offset, int length) {
+            System.arraycopy(src, offset, bytes, this.offset, length);
+            this.offset += length;
+        }
+
+        //getter
+        public byte[] getBytes() {
+            return bytes;
+        }
     }
 }
