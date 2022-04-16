@@ -192,15 +192,18 @@ public final class ScalableByteArray implements Input, Output {
             //当前bytes没有足够空间, 写期间需要扩容
             int writeLen = bytesRemaining;
             int writeOffset = bytesWriteOffset;
-            while (len > 0) {
-                byte[] bytes = byteArrays.get(getWriteArrOffset());
+            int writerIndex = this.writerIndex;
+            int tmpLen = len;
+            while (tmpLen > 0) {
+                byte[] bytes = byteArrays.get(getWriteArrOffset(writerIndex));
                 System.arraycopy(value, startIdx, bytes, writeOffset, writeLen);
 
                 expand();
                 startIdx += writeLen;
-                len -= writeLen;
+                tmpLen -= writeLen;
                 writeOffset = 0;
-                writeLen = Math.min(len, allocSize);
+                writerIndex += writeLen;
+                writeLen = Math.min(tmpLen, allocSize);
             }
         }
         writerIndex += len;
@@ -224,7 +227,7 @@ public final class ScalableByteArray implements Input, Output {
      */
     public void writerIndex(int writerIndex) {
         int limit = byteArrays.size() * allocSize;
-        if(writerIndex >= limit){
+        if(writerIndex > limit){
             throw new IndexOutOfBoundsException("writerIndex >= " + limit);
         }
         this.writerIndex = writerIndex;
@@ -360,7 +363,7 @@ public final class ScalableByteArray implements Input, Output {
         //需要补足的字节数
         int newWriteIndex = this.writerIndex + writableBytes;
         int newWriteArrOffset = getWriteArrOffset(newWriteIndex);
-        int writeArrOffset = getWriteArrOffset();
+        int writeArrOffset = getWriteArrOffset(this.writerIndex - 1);
         int needArray = newWriteArrOffset - writeArrOffset;
         if(needArray > 0){
             for (int i = 0; i < needArray; i++) {
