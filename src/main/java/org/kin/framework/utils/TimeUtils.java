@@ -45,6 +45,39 @@ public class TimeUtils {
         return DATETIME_FORMAT;
     }
 
+    /**
+     * trim mills of second.
+     *
+     * @param timestamp timestamp milliseconds.
+     * @return mills of second.
+     */
+    public static long trimMillsOfSecond(long timestamp) {
+        long base = TimeUnit.SECONDS.toMillis(1);
+        return timestamp / base * base;
+    }
+
+    /**
+     * trim mills of second.
+     *
+     * @param timestamp timestamp milliseconds.
+     * @return minis of minute.
+     */
+    public static long trimMillsOfMinute(long timestamp) {
+        long base = TimeUnit.MINUTES.toMillis(1);
+        return timestamp / base * base;
+    }
+
+    /**
+     * trim mills of second.
+     *
+     * @param timestamp timestamp milliseconds.
+     * @return mills of hour.
+     */
+    public static long trimMillsOfHour(long timestamp) {
+        long base = TimeUnit.HOURS.toMillis(1);
+        return timestamp / base * base;
+    }
+
     //-------------------------------------------------------format or parse------------------------------------------------------
 
     /**

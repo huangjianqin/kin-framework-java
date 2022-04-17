@@ -12,6 +12,7 @@ import java.util.stream.Collectors;
 public class StringUtils {
     private static final String DELIMITER = ",";
     private static final String KV_DELIMITER = "=";
+    private static final String ALL_MATCH_PATTERN = "*";
 
     /**
      * 字符串是否为空(null or 空串)
@@ -235,5 +236,41 @@ public class StringUtils {
         }
 
         return true;
+    }
+
+    /**
+     * 字符串匹配, 以*作为通配符
+     *
+     * @param pattern   字符串模板
+     * @param s         需要匹配的字符串
+     * @return 匹配结果
+     */
+    public static boolean match(String pattern, String s) {
+        pattern = pattern.trim();
+        s = s.trim();
+
+        //"AB"
+        if (!pattern.contains(ALL_MATCH_PATTERN)) {
+            return pattern.equals(s.trim());
+        }
+        //"*", match all
+        if (pattern.equals(ALL_MATCH_PATTERN)) {
+            return true;
+        }
+
+        String[] split = pattern.split("\\" + ALL_MATCH_PATTERN);
+
+        if (split.length == 1) {
+            //"A*", prefix match.
+            return s.startsWith(split[0]);
+        } else if (split.length == 2) {
+            //"*A", postfix match.
+            if (StringUtils.isBlank(split[0])) {
+                return s.endsWith(split[1]);
+            }
+            return s.startsWith(split[0]) && s.endsWith(split[1]);
+        }
+
+        return false;
     }
 }
