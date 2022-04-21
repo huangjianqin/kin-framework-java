@@ -39,6 +39,8 @@ public class ClassUtils {
     private static final Map<Class<?>, Class<?>> PRIMITIVE_WRAPPER_TYPE_MAP = new IdentityHashMap<>(8);
     /** key -> 包装类, value -> 基础类型 */
     private static final Map<Class<?>, Class<?>> PRIMITIVE_TYPE_TO_WRAPPER_MAP = new IdentityHashMap<>(8);
+    /** {@link Object}的默认构造方法 */
+    private static final Constructor<Object> OBJECT_CONSTRUCTOR;
 
     static {
         PRIMITIVE_WRAPPER_TYPE_MAP.put(Boolean.class, boolean.class);
@@ -54,6 +56,20 @@ public class ClassUtils {
         for (Map.Entry<Class<?>, Class<?>> entry : PRIMITIVE_WRAPPER_TYPE_MAP.entrySet()) {
             PRIMITIVE_TYPE_TO_WRAPPER_MAP.put(entry.getValue(), entry.getKey());
         }
+
+        //存在sun.reflect.ReflectionFactory, 才使用
+        Constructor<Object> c = null;
+        Class<?> reflectionFactoryClass = null;
+        try {
+            c = Object.class.getConstructor((Class[]) null);
+            reflectionFactoryClass = Thread.currentThread()
+                    .getContextClassLoader()
+                    .loadClass("sun.reflect.ReflectionFactory");
+        } catch (Exception e) {
+            // ignore
+        }
+
+        OBJECT_CONSTRUCTOR = c != null && reflectionFactoryClass != null ? c : null;
     }
 
     @FunctionalInterface
@@ -801,6 +817,15 @@ public class ClassUtils {
             Class<?> resolvedWrapper = PRIMITIVE_TYPE_TO_WRAPPER_MAP.get(rhsType);
             return (resolvedWrapper != null && lhsType.isAssignableFrom(resolvedWrapper));
         }
+    }
+
+    /**
+     * 获取指定类型{@code clazz}的构造器
+     * !!!注意, 该构造器创建的对象, 不会进行初始化
+     */
+    @SuppressWarnings("unchecked")
+    public static <T> Constructor<T> getNotLoadConstructor(Class<T> clazz) {
+        return (Constructor<T>) sun.reflect.ReflectionFactory.getReflectionFactory().newConstructorForSerialization(clazz, OBJECT_CONSTRUCTOR);
     }
 
     //------------------------------------------------------------字节码相关------------------------------------------------------------
