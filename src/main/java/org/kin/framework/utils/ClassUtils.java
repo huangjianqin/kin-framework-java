@@ -162,22 +162,13 @@ public class ClassUtils {
      */
     @SuppressWarnings("unchecked")
     public static <T> Class<T> getClass(String className, boolean initialize, ClassLoader classLoader) {
-        if(!initialize){
+        try {
+            return (Class<T>) Class.forName(className, initialize, classLoader);
+        } catch (ClassNotFoundException ex) {
             try {
-                return (Class<T>) classLoader.loadClass(className);
+                return (Class<T>) Class.forName(className, initialize, ClassUtils.class.getClassLoader());
             } catch (ClassNotFoundException e) {
-                try {
-                    return (Class<T>) Class.forName(className);
-                } catch (ClassNotFoundException ex) {
-                    ExceptionUtils.throwExt(ex);
-                }
-            }
-        }
-        else{
-            try {
-                return (Class<T>) Class.forName(className, initialize, classLoader);
-            } catch (ClassNotFoundException ex) {
-                ExceptionUtils.throwExt(ex);
+                ExceptionUtils.throwExt(e);
             }
         }
 
