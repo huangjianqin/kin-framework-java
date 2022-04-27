@@ -17,7 +17,7 @@ import static java.util.concurrent.TimeUnit.SECONDS;
  * @author huangjianqin
  * @date 2021/6/5
  */
-public class SensitiveScheduledThreadPoolExecutor implements ScheduledExecutorService, Closeable {
+public final class SensitiveScheduledThreadPoolExecutor implements ScheduledExecutorService, Closeable {
     //状态枚举
     /** not start */
     private static final byte ST_NOT_STARTED = 1;
@@ -32,7 +32,7 @@ public class SensitiveScheduledThreadPoolExecutor implements ScheduledExecutorSe
     /** 原子更新状态值 */
     private static final AtomicIntegerFieldUpdater<SensitiveScheduledThreadPoolExecutor> STATE_UPDATER =
             AtomicIntegerFieldUpdater.newUpdater(SensitiveScheduledThreadPoolExecutor.class, "state");
-    /** 时间变化检查间隔,耗秒 */
+    /** 时间变化检查间隔, 3秒 */
     private static final int CHECK_INTERNAL = 3_000;
     /** 最大允许时间变化为10s */
     private static final int MAX_CHANGE_DURATION = 10_000;
@@ -72,6 +72,7 @@ public class SensitiveScheduledThreadPoolExecutor implements ScheduledExecutorSe
         this.executor = ExecutionContext.fix(corePoolSize + 1, threadFactory);
 
         if (timeSensitive) {
+            //支持时间敏感只能用毫秒, mills seconds可以感知系统时间变化, 而nano seconds不行
             timeUnit = TimeUnit.MILLISECONDS;
             timeChangeCheck();
         } else {
@@ -96,14 +97,15 @@ public class SensitiveScheduledThreadPoolExecutor implements ScheduledExecutorSe
     }
 
     /**
-     * 时间变化检查
+     * 启动一个定时任务用于检查时间变化
      */
     private void timeChangeCheck() {
         //时间变化检查
         long now = now();
         scheduleWithFixedDelay(() -> {
             if (now() - now >= MAX_CHANGE_DURATION) {
-                queue.refresh();
+                //如果时间变化大于指定阈值, 则唤醒阻塞等待task的Worker, 从task queue take task
+                queue.signalAllWaiter();
             }
             timeChangeCheck();
         }, CHECK_INTERNAL, CHECK_INTERNAL, SECONDS);
@@ -410,7 +412,7 @@ public class SensitiveScheduledThreadPoolExecutor implements ScheduledExecutorSe
     //--------------------------------------------------------------------------------------------------------------------------------------------
 
     /**
-     * 包装task信息, 装饰器
+     * schedule task信息封装
      */
     private class ScheduledFutureTask<V> extends FutureTask<V> implements RunnableScheduledFuture<V> {
         /**

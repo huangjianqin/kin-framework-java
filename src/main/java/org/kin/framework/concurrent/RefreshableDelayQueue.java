@@ -10,12 +10,14 @@ import java.util.concurrent.locks.ReentrantLock;
 import static java.util.concurrent.TimeUnit.NANOSECONDS;
 
 /**
- * 详细请看{@link #refresh()}
+ * 从{@link java.util.concurrent.ScheduledThreadPoolExecutor.DelayedWorkQueue}复制过来,
+ * 新增方法{@link #signalAllWaiter()}, 用于唤醒所有waiter, 重新等待schedule task过期
+ * 用于支持时间敏感的scheduler
  *
  * @author huangjianqin
  * @date 2021/6/5
  */
-public class RefreshableDelayQueue<E extends Delayed> extends AbstractQueue<E>
+final class RefreshableDelayQueue<E extends Delayed> extends AbstractQueue<E>
         implements BlockingQueue<E> {
 
     private final transient ReentrantLock lock = new ReentrantLock();
@@ -540,10 +542,10 @@ public class RefreshableDelayQueue<E extends Delayed> extends AbstractQueue<E>
     /**
      * 唤醒{@link #take()}或者{@link #poll()}的条件队列等待, 让其重新检查队列第一个元素是否个合法
      */
-    public void refresh() {
+    public void signalAllWaiter() {
         lock.lock();
         try {
-            available.signal();
+            available.signalAll();
         } finally {
             lock.unlock();
         }
