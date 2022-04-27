@@ -12,13 +12,11 @@ import java.util.concurrent.locks.Lock;
 public class NonReentrantLock extends AbstractQueuedSynchronizer implements Lock {
     private static final int PENDING = 0;
     private static final int DONE = 1;
-    /** 拥有锁的线程 */
-    private Thread owner;
 
     @Override
     protected boolean tryAcquire(int acquires) {
         if (compareAndSetState(PENDING, DONE)) {
-            this.owner = Thread.currentThread();
+            setExclusiveOwnerThread(Thread.currentThread());
             return true;
         }
         return false;
@@ -26,10 +24,11 @@ public class NonReentrantLock extends AbstractQueuedSynchronizer implements Lock
 
     @Override
     protected boolean tryRelease(int releases) {
-        if (Thread.currentThread() != this.owner) {
-            throw new IllegalMonitorStateException("Owner is " + this.owner);
+        Thread exclusiveOwnerThread = getExclusiveOwnerThread();
+        if (Thread.currentThread() != exclusiveOwnerThread) {
+            throw new IllegalMonitorStateException("owner is " + exclusiveOwnerThread);
         }
-        this.owner = null;
+        setExclusiveOwnerThread(null);
         setState(0);
         return true;
     }
@@ -66,11 +65,6 @@ public class NonReentrantLock extends AbstractQueuedSynchronizer implements Lock
 
     @Override
     protected boolean isHeldExclusively() {
-        return super.isHeldExclusively() && getState() != PENDING && Thread.currentThread() == this.owner;
-    }
-
-    //getter
-    public Thread getOwner() {
-        return owner;
+        return super.isHeldExclusively() && getState() != PENDING && Thread.currentThread() == getExclusiveOwnerThread();
     }
 }
