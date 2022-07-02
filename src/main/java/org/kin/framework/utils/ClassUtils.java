@@ -144,7 +144,7 @@ public class ClassUtils {
      * 根据指定类名加载类
      */
     public static <T> Class<T> getClass(String className) {
-        return getClass(className, false);
+        return getClass(className, true);
     }
 
     /**
@@ -152,7 +152,7 @@ public class ClassUtils {
      * @param initialize 是否对class进行初始化
      */
     public static <T> Class<T> getClass(String className, boolean initialize) {
-        return getClass(className, initialize, Thread.currentThread().getContextClassLoader());
+        return getClass(className, initialize, ClassUtils.class.getClassLoader());
     }
 
     /**
@@ -166,7 +166,7 @@ public class ClassUtils {
             return (Class<T>) Class.forName(className, initialize, classLoader);
         } catch (ClassNotFoundException ex) {
             try {
-                return (Class<T>) Class.forName(className, initialize, ClassUtils.class.getClassLoader());
+                return (Class<T>) Class.forName(className, initialize, Thread.currentThread().getContextClassLoader());
             } catch (ClassNotFoundException e) {
                 ExceptionUtils.throwExt(e);
             }
