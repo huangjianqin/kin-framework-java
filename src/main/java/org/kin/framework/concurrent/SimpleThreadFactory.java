@@ -1,7 +1,6 @@
 package org.kin.framework.concurrent;
 
 import org.kin.framework.utils.StringUtils;
-import org.springframework.lang.NonNull;
 
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -50,7 +49,6 @@ public class SimpleThreadFactory implements ThreadFactory {
     }
 
     @Override
-    @NonNull
     public final Thread newThread(Runnable r) {
         Thread thread = newThread(threadGroup, r, prefix + "--threads-", counter.getAndIncrement());
         if (thread.isDaemon()) {

@@ -1,12 +1,11 @@
 package org.kin.framework.utils;
 
+import com.google.common.base.Preconditions;
 import com.google.common.collect.Sets;
 import org.kin.framework.collection.Tuple;
-import org.springframework.util.Assert;
 import sun.reflect.generics.reflectiveObjects.ParameterizedTypeImpl;
 import sun.reflect.generics.reflectiveObjects.TypeVariableImpl;
 
-import javax.annotation.Nonnull;
 import java.io.IOException;
 import java.lang.reflect.*;
 import java.net.JarURLConnection;
@@ -149,6 +148,7 @@ public class ClassUtils {
 
     /**
      * 根据指定类名加载类
+     *
      * @param initialize 是否对class进行初始化
      */
     public static <T> Class<T> getClass(String className, boolean initialize) {
@@ -157,7 +157,8 @@ public class ClassUtils {
 
     /**
      * 根据指定类名加载类
-     * @param initialize 是否对class进行初始化
+     *
+     * @param initialize  是否对class进行初始化
      * @param classLoader 指定classloader
      */
     @SuppressWarnings("unchecked")
@@ -796,8 +797,8 @@ public class ClassUtils {
      * 判断是否可以rhsType是可以被assigned to lhsType, 考虑基础类型
      */
     public static boolean isAssignable(Class<?> lhsType, Class<?> rhsType) {
-        Assert.notNull(lhsType, "Left-hand side type must not be null");
-        Assert.notNull(rhsType, "Right-hand side type must not be null");
+        Preconditions.checkNotNull(lhsType, "Left-hand side type must not be null");
+        Preconditions.checkNotNull(rhsType, "Right-hand side type must not be null");
         if (lhsType.isAssignableFrom(rhsType)) {
             return true;
         }

@@ -17,6 +17,7 @@
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
 
         <kin-framework-dependencies.version>0.1.0.0</kin-framework-dependencies.version>
+        <spring.version>5.3.7</spring.version>
     </properties>
 
     <dependencyManagement>
@@ -131,7 +132,8 @@
         <dependency>
             <groupId>org.springframework</groupId>
             <artifactId>spring-context</artifactId>
-            <optional>true</optional>
+            <version>${spring.version}</version>
+            <scope>test</scope>
         </dependency>
 
         <!-- byte buddy(基于ASM) -->

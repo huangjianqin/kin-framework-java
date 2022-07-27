@@ -2,8 +2,8 @@ package org.kin.framework.beans;
 
 import org.kin.framework.utils.ExtensionLoader;
 import org.kin.framework.utils.SPI;
-import org.springframework.lang.Nullable;
 
+import javax.annotation.Nullable;
 import java.beans.BeanInfo;
 import java.beans.IntrospectionException;
 

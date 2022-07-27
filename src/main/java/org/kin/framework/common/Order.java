@@ -15,8 +15,6 @@ public @interface Order {
     /**
      * The order value.
      * Default is {@link Ordered#LOWEST_PRECEDENCE}.
-     *
-     * @see org.springframework.core.Ordered#getOrder()
      */
     int value() default Ordered.LOWEST_PRECEDENCE;
 }
