@@ -5,6 +5,7 @@ import org.kin.framework.Closeable;
 import org.kin.framework.utils.CollectionUtils;
 
 import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
@@ -86,13 +87,39 @@ public final class SensitiveScheduledThreadPoolExecutor implements ScheduledExec
      * 一条线程作为loop, 循环获取task, 然后交给线程池其余线程处理
      */
     private void loop() {
-        while (!isShutdown()) {
-            try {
-                ScheduledFutureTask<?> task = queue.take();
-                executor.execute(task);
-            } catch (InterruptedException e) {
-                //ignore
+        try {
+            while (!isShutdown()) {
+                try {
+                    takeTasksAndRun();
+                } catch (Exception e) {
+                    //ignore
+                }
             }
+        }finally {
+            drainTasksAndRun(null);
+        }
+    }
+
+    /**
+     * 阻塞等待task并执行
+     */
+    private void takeTasksAndRun() throws InterruptedException {
+        ScheduledFutureTask<?> task = queue.take();
+        drainTasksAndRun(task);
+    }
+
+    /**
+     * 执行队列中所有的task
+     */
+    private void drainTasksAndRun(@Nullable ScheduledFutureTask<?> firstTask){
+        if (Objects.nonNull(firstTask)) {
+            executor.execute(firstTask);
+        }
+
+        List<ScheduledFutureTask<?>> tasks = new ArrayList<>(16);
+        queue.drainTo(tasks);
+        for (ScheduledFutureTask<?> task : tasks) {
+            executor.execute(task);
         }
     }
 
@@ -132,7 +159,8 @@ public final class SensitiveScheduledThreadPoolExecutor implements ScheduledExec
     }
 
     @Override
-    public ScheduledFuture<?> schedule(Runnable command, long delay, TimeUnit unit) {
+    @Nonnull
+    public ScheduledFuture<?> schedule(@Nonnull Runnable command, long delay, @Nonnull TimeUnit unit) {
         Preconditions.checkNotNull(command, "task is null");
 
         ScheduledFutureTask<?> task = new ScheduledFutureTask<>(command, timeUnit.convert(delay, unit));
@@ -141,7 +169,8 @@ public final class SensitiveScheduledThreadPoolExecutor implements ScheduledExec
     }
 
     @Override
-    public <V> ScheduledFuture<V> schedule(Callable<V> callable, long delay, TimeUnit unit) {
+    @Nonnull
+    public <V> ScheduledFuture<V> schedule(@Nonnull Callable<V> callable, long delay, @Nonnull TimeUnit unit) {
         Preconditions.checkNotNull(callable, "task is null");
 
         ScheduledFutureTask<V> task = new ScheduledFutureTask<>(callable, timeUnit.convert(delay, unit));
@@ -150,7 +179,8 @@ public final class SensitiveScheduledThreadPoolExecutor implements ScheduledExec
     }
 
     @Override
-    public ScheduledFuture<?> scheduleAtFixedRate(Runnable command, long initialDelay, long period, TimeUnit unit) {
+    @Nonnull
+    public ScheduledFuture<?> scheduleAtFixedRate(@Nonnull Runnable command, long initialDelay, long period, @Nonnull TimeUnit unit) {
         Preconditions.checkNotNull(command, "task is null");
 
         ScheduledFutureTask<?> task = new ScheduledFutureTask<>(command, timeUnit.convert(initialDelay, unit), timeUnit.convert(period, unit));
@@ -160,7 +190,8 @@ public final class SensitiveScheduledThreadPoolExecutor implements ScheduledExec
     }
 
     @Override
-    public ScheduledFuture<?> scheduleWithFixedDelay(Runnable command, long initialDelay, long delay, TimeUnit unit) {
+    @Nonnull
+    public ScheduledFuture<?> scheduleWithFixedDelay(@Nonnull Runnable command, long initialDelay, long delay, @Nonnull TimeUnit unit) {
         Preconditions.checkNotNull(command, "task is null");
 
         ScheduledFutureTask<?> task = new ScheduledFutureTask<>(command, timeUnit.convert(initialDelay, unit), -timeUnit.convert(delay, unit));
@@ -227,7 +258,8 @@ public final class SensitiveScheduledThreadPoolExecutor implements ScheduledExec
     }
 
     @Override
-    public <T> Future<T> submit(Callable<T> task) {
+    @Nonnull
+    public <T> Future<T> submit(@Nonnull Callable<T> task) {
         Preconditions.checkNotNull(task, "task is null");
         ScheduledFutureTask<T> futureTask = new ScheduledFutureTask<>(task);
         delayedExecute(futureTask);
@@ -235,7 +267,8 @@ public final class SensitiveScheduledThreadPoolExecutor implements ScheduledExec
     }
 
     @Override
-    public <T> Future<T> submit(Runnable task, T result) {
+    @Nonnull
+    public <T> Future<T> submit(@Nonnull Runnable task, T result) {
         Preconditions.checkNotNull(task, "task is null");
         ScheduledFutureTask<T> futureTask = new ScheduledFutureTask<>(task, result);
         delayedExecute(futureTask);
@@ -243,12 +276,13 @@ public final class SensitiveScheduledThreadPoolExecutor implements ScheduledExec
     }
 
     @Override
-    public Future<?> submit(Runnable task) {
+    @Nonnull
+    public Future<?> submit(@Nonnull Runnable task) {
         return submit(task, null);
     }
 
     @Override
-    public <T> List<Future<T>> invokeAll(Collection<? extends Callable<T>> tasks) throws InterruptedException {
+    public <T> List<Future<T>> invokeAll(@Nonnull Collection<? extends Callable<T>> tasks) throws InterruptedException {
         Preconditions.checkArgument(CollectionUtils.isNonEmpty(tasks), "tasks is empty");
 
         ArrayList<Future<T>> futures = new ArrayList<>(tasks.size());
@@ -280,7 +314,7 @@ public final class SensitiveScheduledThreadPoolExecutor implements ScheduledExec
     }
 
     @Override
-    public <T> List<Future<T>> invokeAll(Collection<? extends Callable<T>> tasks, long timeout, TimeUnit unit) throws InterruptedException {
+    public <T> List<Future<T>> invokeAll(@Nonnull Collection<? extends Callable<T>> tasks, long timeout, @Nonnull TimeUnit unit) throws InterruptedException {
         Preconditions.checkArgument(CollectionUtils.isNonEmpty(tasks), "tasks is empty");
 
         long realTimeout = timeUnit.convert(timeout, unit);
@@ -328,24 +362,24 @@ public final class SensitiveScheduledThreadPoolExecutor implements ScheduledExec
     }
 
     @Override
-    public <T> T invokeAny(Collection<? extends Callable<T>> tasks) throws InterruptedException, ExecutionException {
+    public <T> T invokeAny(@Nonnull Collection<? extends Callable<T>> tasks) throws InterruptedException, ExecutionException {
         try {
-            return invokeAny(tasks, 0, null);
+            return invokeAny(tasks, 0, timeUnit);
         } catch (TimeoutException e) {
             throw new IllegalStateException(e);
         }
     }
 
     @Override
-    public <T> T invokeAny(Collection<? extends Callable<T>> tasks, long timeout, TimeUnit unit) throws InterruptedException, ExecutionException, TimeoutException {
+    public <T> T invokeAny(@Nonnull Collection<? extends Callable<T>> tasks, long timeout, @Nonnull TimeUnit unit) throws InterruptedException, ExecutionException, TimeoutException {
         Preconditions.checkArgument(CollectionUtils.isNonEmpty(tasks), "tasks is empty");
 
         boolean timed = timeout > 0;
-        long realTimeout = Objects.nonNull(unit) ? timeUnit.convert(timeout, unit) : 0;
+        long realTimeout = timeUnit.convert(timeout, unit);
         int ntasks = tasks.size();
         ArrayList<Future<T>> futures = new ArrayList<>(ntasks);
         ExecutorCompletionService<T> ecs =
-                new ExecutorCompletionService<T>(this);
+                new ExecutorCompletionService<>(this);
 
         try {
             ExecutionException ee = null;
@@ -400,7 +434,7 @@ public final class SensitiveScheduledThreadPoolExecutor implements ScheduledExec
     }
 
     @Override
-    public void execute(Runnable command) {
+    public void execute(@Nonnull Runnable command) {
         Preconditions.checkNotNull(command, "task is null");
         submit(command);
     }

@@ -259,18 +259,18 @@ public class SingleThreadEventExecutor implements EventExecutor, LoggerOprs {
     @Override
     public <T> T invokeAny(@Nonnull Collection<? extends Callable<T>> tasks) throws InterruptedException, ExecutionException {
         try {
-            return invokeAny(tasks, 0, null);
+            return invokeAny(tasks, 0, TimeUnit.NANOSECONDS);
         } catch (TimeoutException e) {
             throw new IllegalStateException(e);
         }
     }
 
     @Override
-    public <T> T invokeAny(@Nonnull Collection<? extends Callable<T>> tasks, long timeout, TimeUnit unit) throws InterruptedException, ExecutionException, TimeoutException {
+    public <T> T invokeAny(@Nonnull Collection<? extends Callable<T>> tasks, long timeout, @Nonnull TimeUnit unit) throws InterruptedException, ExecutionException, TimeoutException {
         Preconditions.checkArgument(CollectionUtils.isNonEmpty(tasks), "tasks is empty");
 
         boolean timed = timeout > 0;
-        long nanos = Objects.nonNull(unit) ? unit.toNanos(timeout) : 0;
+        long nanos = unit.toNanos(timeout);
         int ntasks = tasks.size();
         ArrayList<Future<T>> futures = new ArrayList<>(ntasks);
         ExecutorCompletionService<T> ecs =
