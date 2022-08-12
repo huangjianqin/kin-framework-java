@@ -50,7 +50,6 @@ public abstract class AbstractBloomFilter<T> {
      * @param object 目标对象
      */
     public final void put(T object) {
-        Preconditions.checkNotNull(object);
         put(getBitIndices(object));
     }
 
@@ -68,7 +67,6 @@ public abstract class AbstractBloomFilter<T> {
      * @return true即可能存在, false即肯定不存在
      */
     public final boolean contains(T object) {
-        Preconditions.checkNotNull(object);
         return contains(getBitIndices(object));
     }
 
@@ -87,23 +85,25 @@ public abstract class AbstractBloomFilter<T> {
      * @param object 元素值
      * @return bit下标的数组
      */
-    private long[] getBitIndices(T object) {
+    protected long[] getBitIndices(T object) {
+        Preconditions.checkNotNull(object);
+
         byte[] bytes = mapper.apply(object);
         long[] longs = MurmurHash3.hash128(bytes);
         long hash1 = longs[0];
         long hash2 = longs[1];
 
-        long[] indeces = new long[hashFunctionNum];
+        long[] indices = new long[hashFunctionNum];
         //起点hash1
         long combinedHash = hash1;
         for (int i = 0; i < hashFunctionNum; i++) {
             //保证combinedHash为正数并且在[0, bitmapLength)范围内
-            indeces[i] = (combinedHash & Long.MAX_VALUE) % bitmapLength;
+            indices[i] = (combinedHash & Long.MAX_VALUE) % bitmapLength;
             //递增hash2
             combinedHash += hash2;
         }
 
-        return indeces;
+        return indices;
     }
 
     //getter
