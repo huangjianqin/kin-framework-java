@@ -143,7 +143,7 @@ public abstract class AbstractConsistentHash<T> {
 
     @Override
     public String toString() {
-        return "ConsistentHash{" +
+        return "AbstractConsistentHash{" +
                 "replicaNum=" + replicaNum +
                 ", circle=" + circle +
                 "} ";
