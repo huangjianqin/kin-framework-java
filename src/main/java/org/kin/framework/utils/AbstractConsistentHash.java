@@ -23,19 +23,19 @@ public abstract class AbstractConsistentHash<T> {
     /** hash环 */
     private final SortedMap<Long, T> circle = new TreeMap<>();
     /** 虚拟节点数量, 用于节点分布更加均匀, 负载更加均衡 */
-    private final int replicaNum;
+    private final int virtualFac;
     /** 读写锁 */
     private final ReentrantReadWriteLock rwl = new ReentrantReadWriteLock();
     private final Lock r = rwl.readLock();
     private final Lock w = rwl.writeLock();
 
-    public AbstractConsistentHash(Function<T, String> mapper, int replicaNum) {
-        Preconditions.checkArgument(replicaNum > 0, "replicaNum must be greater than 0");
+    public AbstractConsistentHash(Function<T, String> mapper, int virtualFac) {
+        Preconditions.checkArgument(virtualFac > 0, "virtualFac must be greater than 0");
         if (Objects.isNull(mapper)) {
             mapper = Object::toString;
         }
         this.mapper = mapper;
-        this.replicaNum = replicaNum;
+        this.virtualFac = virtualFac;
     }
 
     /**
@@ -65,8 +65,8 @@ public abstract class AbstractConsistentHash<T> {
         Preconditions.checkNotNull(node);
         Preconditions.checkArgument(weight > 0, "weight must be greater than 0");
 
-        int finalNum = replicaNum * weight;
-        Preconditions.checkArgument(finalNum > 0, "replicaNum * weight must be greater than 0");
+        int finalNum = virtualFac * weight;
+        Preconditions.checkArgument(finalNum > 0, "virtualFac * weight must be greater than 0");
         w.lock();
         try {
             for (int i = 0; i < finalNum; i++) {
@@ -100,8 +100,8 @@ public abstract class AbstractConsistentHash<T> {
         Preconditions.checkNotNull(node);
         Preconditions.checkArgument(weight > 0, "weight must be greater than 0");
 
-        int finalNum = replicaNum * weight;
-        Preconditions.checkArgument(finalNum > 0, "replicaNum * weight must be greater than 0");
+        int finalNum = virtualFac * weight;
+        Preconditions.checkArgument(finalNum > 0, "virtualFac * weight must be greater than 0");
         w.lock();
         try {
             for (int i = 0; i < finalNum; i++) {
@@ -144,7 +144,7 @@ public abstract class AbstractConsistentHash<T> {
     @Override
     public String toString() {
         return "AbstractConsistentHash{" +
-                "replicaNum=" + replicaNum +
+                "virtualFac=" + virtualFac +
                 ", circle=" + circle +
                 "} ";
     }
