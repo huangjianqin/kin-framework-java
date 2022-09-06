@@ -30,7 +30,7 @@ public class OrderedEventLoop<P extends OrderedEventLoop<P>> implements EventLoo
     /** 线程池 */
     private final ExecutionContext executionContext;
     /** 消息队列 */
-    private final Queue<Message<P>> inBox = new LinkedBlockingQueue<>();
+    private final Queue<Message<P>> inBox = new MemorySafeLinkedBlockingQueue<>();
     /** 消息数量 */
     private final AtomicInteger boxSize = new AtomicInteger();
     /** 是否已关闭 */

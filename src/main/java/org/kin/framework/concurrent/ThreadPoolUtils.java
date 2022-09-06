@@ -139,8 +139,8 @@ public final class ThreadPoolUtils {
         private int maximumThreads = Integer.MAX_VALUE;
         private long keepAliveTime = 60L;
         private TimeUnit unit = TimeUnit.SECONDS;
-        private BlockingQueue<Runnable> workQueue = new LinkedBlockingQueue<>();
-        private ThreadFactory threadFactory = Executors.defaultThreadFactory();
+        private BlockingQueue<Runnable> workQueue;
+        private ThreadFactory threadFactory;
         private java.util.concurrent.RejectedExecutionHandler handler = ThreadPoolUtils.DEFAULT_REJECTED_EXECUTION_HANDLER;
         private boolean allowCoreThreadTimeOut;
 
@@ -177,6 +177,10 @@ public final class ThreadPoolUtils {
             return this;
         }
 
+        public ThreadPoolBuilder workQueue(int queueLen) {
+            return workQueue(new LinkedBlockingQueue<>(queueLen));
+        }
+
         public ThreadPoolBuilder workQueue(BlockingQueue<Runnable> workQueue) {
             this.workQueue = workQueue;
             return this;
@@ -199,6 +203,7 @@ public final class ThreadPoolUtils {
 
         //---------------------------------------------build
         public ThreadPoolExecutor common() {
+            beforeConstruct(true);
             ThreadPoolExecutor threadPoolExecutor = ThreadPoolUtils.newThreadPool(this.poolName, this.enableMetric, this.coreThreads,
                     this.maximumThreads, this.keepAliveTime, this.unit, this.workQueue, this.threadFactory, this.handler);
             afterConstruct(threadPoolExecutor);
@@ -206,16 +211,30 @@ public final class ThreadPoolUtils {
         }
 
         public EagerThreadPoolExecutor eager() {
+            beforeConstruct(false);
             EagerThreadPoolExecutor threadPoolExecutor = eager(0);
             afterConstruct(threadPoolExecutor);
             return threadPoolExecutor;
         }
 
         public EagerThreadPoolExecutor eager(int queueSize) {
+            beforeConstruct(false);
             EagerThreadPoolExecutor threadPoolExecutor = ThreadPoolUtils.newEagerThreadPool(this.poolName, this.enableMetric, this.coreThreads,
                     this.maximumThreads, this.keepAliveTime, this.unit, queueSize, this.threadFactory, this.handler);
             afterConstruct(threadPoolExecutor);
             return threadPoolExecutor;
+        }
+
+        /**
+         * @param defaultWorkQueue  如果没有设置workQueue, 则初始化默认
+         */
+        private void beforeConstruct(boolean defaultWorkQueue) {
+            if (defaultWorkQueue && Objects.isNull(workQueue)) {
+                workQueue = new MemorySafeLinkedBlockingQueue<>();
+            }
+            if (Objects.isNull(threadFactory)) {
+                threadFactory = Executors.defaultThreadFactory();
+            }
         }
 
         private void afterConstruct(ThreadPoolExecutor threadPoolExecutor) {
@@ -229,7 +248,7 @@ public final class ThreadPoolUtils {
         private String poolName;
         private boolean enableMetric;
         private int coreThreads = SysUtils.getSuitableThreadNum();
-        private ThreadFactory threadFactory = Executors.defaultThreadFactory();
+        private ThreadFactory threadFactory;
         private java.util.concurrent.RejectedExecutionHandler handler = ThreadPoolUtils.DEFAULT_REJECTED_EXECUTION_HANDLER;
         private boolean allowCoreThreadTimeOut;
         private boolean setRemoveOnCancelPolicy;
@@ -273,6 +292,10 @@ public final class ThreadPoolUtils {
         }
 
         public ScheduledThreadPoolExecutor build() {
+            if (Objects.isNull(threadFactory)) {
+                threadFactory = Executors.defaultThreadFactory();
+            }
+
             ScheduledThreadPoolExecutor scheduledThreadPoolExecutor = ThreadPoolUtils.newScheduledThreadPool(this.poolName, this.enableMetric, this.coreThreads,
                     this.threadFactory, this.handler);
             if (allowCoreThreadTimeOut) {
@@ -289,7 +312,7 @@ public final class ThreadPoolUtils {
         private String poolName;
         private boolean enableMetric;
         private int parallelism = SysUtils.CPU_NUM;
-        private ForkJoinPool.ForkJoinWorkerThreadFactory factory = ForkJoinPool.defaultForkJoinWorkerThreadFactory;
+        private ForkJoinPool.ForkJoinWorkerThreadFactory factory;
         private Thread.UncaughtExceptionHandler handler;
         private boolean asyncMode;
 
@@ -324,6 +347,9 @@ public final class ThreadPoolUtils {
         }
 
         public ForkJoinPool build() {
+            if (Objects.isNull(factory)) {
+                factory = ForkJoinPool.defaultForkJoinWorkerThreadFactory;
+            }
             return ThreadPoolUtils.newForkJoinPool(this.poolName, this.enableMetric, this.parallelism,
                     this.factory, this.handler, this.asyncMode);
         }

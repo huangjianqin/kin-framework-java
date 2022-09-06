@@ -55,7 +55,7 @@ public class SingleThreadEventExecutor implements EventExecutor, LoggerOprs {
     /** 状态值 */
     private volatile int state = ST_NOT_STARTED;
     /** 任务队列 */
-    private final BlockingQueue<Runnable> taskQueue = new LinkedBlockingQueue<>();
+    private final BlockingQueue<Runnable> taskQueue = new MemorySafeLinkedBlockingQueue<>();
     /** 调度任务队列 */
     private final PriorityQueue<ScheduledFutureTask<?>> scheduledTaskQueue = new DefaultPriorityQueue<>(SCHEDULED_FUTURE_TASK_COMPARATOR, 11);
     /** 所属线程池 */

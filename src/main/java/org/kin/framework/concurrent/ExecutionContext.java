@@ -163,7 +163,7 @@ public class ExecutionContext implements ScheduledExecutorService {
                 .coreThreads(parallelism)
                 .maximumThreads(parallelism)
                 .keepAlive(60L, TimeUnit.SECONDS)
-                .workQueue(new LinkedBlockingQueue<>())
+                .workQueue(new MemorySafeLinkedBlockingQueue<>())
                 .threadFactory(workerThreadFactory)
                 .common();
         if (scheduleParallelism > 0) {
