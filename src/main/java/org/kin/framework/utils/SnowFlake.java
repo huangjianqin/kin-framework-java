@@ -21,8 +21,8 @@ public class SnowFlake {
 
     /** 序列在id中占的位数 */
     public static final long SEQUENCE_BITS = 12L;
-    /** 生成序列的掩码, 结果是4095 */
-    public static final long SEQUENCE_MASK = ~(-1L << SEQUENCE_BITS);
+    /** 最大序列值, 结果是4095 */
+    public static final long MAX_SEQUENCE = ~(-1L << SEQUENCE_BITS);
 
     /** 机器ID向左移12位 */
     public static final long WORKER_ID_SHIFT = SEQUENCE_BITS;
@@ -36,8 +36,8 @@ public class SnowFlake {
     protected final long workerId;
     /** 数据中心ID(0~31) */
     protected final long datacenterId;
-    /** 毫秒内序列(0~4095) */
-    protected long sequence = 0L;
+    /** 上次毫秒内序列(0~4095) */
+    protected long lastSequence = 0L;
     /** 上次生成ID的时间截 */
     protected long lastTimestamp = -1L;
 
@@ -61,31 +61,36 @@ public class SnowFlake {
      *
      * @return SnowflakeId
      */
-    public synchronized long nextId() {
-        long timestamp = System.currentTimeMillis();
+    public long nextId() {
+        long timestamp;
+        long sequence;
+        synchronized (this) {
+            timestamp = System.currentTimeMillis();
 
-        //如果当前时间小于上一次ID生成的时间戳，说明系统时钟回退过, 则应当抛出异常
-        if (timestamp < lastTimestamp) {
-            throw new RuntimeException(
-                    String.format("clock moved backwards. Refusing to generate id for %d milliseconds", lastTimestamp - timestamp));
-        }
-
-        //如果是同一时间生成的，则进行毫秒内序列
-        if (lastTimestamp == timestamp) {
-            sequence = (sequence + 1) & SEQUENCE_MASK;
-            //毫秒内序列溢出
-            if (sequence == 0) {
-                //阻塞到下一个毫秒,获得新的时间戳
-                timestamp = waitNextMillis(lastTimestamp);
+            //如果当前时间小于上一次ID生成的时间戳，说明系统时钟回退过, 则应当抛出异常
+            if (timestamp < lastTimestamp) {
+                throw new RuntimeException(
+                        String.format("clock moved backwards. Refusing to generate id for %d milliseconds", lastTimestamp - timestamp));
             }
-        }
-        //时间戳改变，毫秒内序列重置
-        else {
-            sequence = 0L;
-        }
 
-        //记录上次生成ID的时间截
-        lastTimestamp = timestamp;
+            //如果是同一时间生成的，则进行毫秒内序列
+            if (lastTimestamp == timestamp) {
+                lastSequence = (lastSequence + 1) & MAX_SEQUENCE;
+                //毫秒内序列溢出
+                if (lastSequence == 0) {
+                    //阻塞到下一个毫秒,获得新的时间戳
+                    timestamp = waitNextMillis(lastTimestamp);
+                }
+            }
+            //时间戳改变，毫秒内序列重置
+            else {
+                lastSequence = 0L;
+            }
+            //记录上次生成ID的时间截
+            lastTimestamp = timestamp;
+            //记录最后确定的sequence值
+            sequence = lastSequence;
+        }
 
         //组装成64位ID
         return ((timestamp - TWEPOCH) << TIMESTAMP_LEFT_SHIFT)

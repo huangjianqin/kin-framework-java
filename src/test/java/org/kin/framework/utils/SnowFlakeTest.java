@@ -1,11 +1,9 @@
 package org.kin.framework.utils;
 
 import com.google.common.base.Stopwatch;
+import org.checkerframework.checker.units.qual.C;
 
-import java.util.concurrent.ConcurrentSkipListSet;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.ForkJoinPool;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.*;
 
 /**
  * @author huangjianqin
@@ -16,7 +14,7 @@ public class SnowFlakeTest {
 
     public static void main(String[] args) throws InterruptedException {
         SnowFlake snowFlake = new SnowFlake(1, 1);
-        int times = 100_000_000;
+        int times = 10_000_000;
         Stopwatch watcher = Stopwatch.createStarted();
         CountDownLatch latch = new CountDownLatch(times);
         for (int i = 0; i < times; i++) {
