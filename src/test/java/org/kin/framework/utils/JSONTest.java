@@ -25,6 +25,9 @@ public class JSONTest {
         List<String> stringList = JSON.readList(strListJson, String.class);
         System.out.println(stringList.get(0));
 
+        String mapJson = "{\"a\":12, \"b\":{\"c\":12}}";
+        System.out.println(JSON.readMap(mapJson, String.class, Object.class));
+
         Integer i = JSON.read("null", Integer.class);
         System.out.println(i);
         Map<String, Object> d1MapData = new HashMap<>();

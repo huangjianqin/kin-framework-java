@@ -201,6 +201,15 @@ public class JSON {
     }
 
     /**
+     * 解析map json
+     *
+     * @param json json字符串
+     */
+    public static Map<String, Object> readMap(String json) {
+        return readMap(json, String.class, Object.class);
+    }
+
+    /**
      * 将json形式的map数据转换成对象
      */
     public static <C> C convert(Object jsonObj, Class<? extends C> targetClass) {
