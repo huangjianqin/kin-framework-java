@@ -9,7 +9,10 @@ import java.util.regex.Pattern;
  * @date 2018/2/26
  */
 public class SysUtils {
+    /** 可用cpu数量 */
     public static final int CPU_NUM = Runtime.getRuntime().availableProcessors();
+    /** 双倍cpu */
+    public static final int DOUBLE_CPU = CPU_NUM * 2;
 
     private static final Pattern INTEGER_PATTERN = Pattern.compile("-?[0-9]+");
 
@@ -17,7 +20,7 @@ public class SysUtils {
      * @return 合适的cpu核心数
      */
     public static int getSuitableThreadNum() {
-        return CPU_NUM * 2 - 1;
+        return DOUBLE_CPU - 1;
     }
 
     /**
