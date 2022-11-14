@@ -14,12 +14,17 @@ import java.lang.annotation.*;
 @Inherited
 public @interface SPI {
     /**
-     * 默认扩展名, 对应实现类的class name | simple class name | 前缀 + extension class simple name | {@link Extension#value()
+     * 定义默认extension name, 对应实现类的class name | simple class name | 前缀 + extension class simple name | {@link Extension#value()}
+     *
+     * @see ExtensionLoader#getExtensionOrDefault(Class, int)
+     * @see ExtensionLoader#getExtensionOrDefault(Class, String)
+     * @see ExtensionLoader#getExtensionOrDefault(Class, int, Object...)
+     * @see ExtensionLoader#getExtensionOrDefault(Class, String, Object...)
      */
     String value() default "";
 
     /**
-     * extension class别名, 默认使用{@link Class#getName()}和{@link Class#getSimpleName()}
+     * 定义extension class在kin.factories中定义的key, 默认class name
      */
     String alias() default "";
 

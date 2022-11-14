@@ -15,7 +15,11 @@ import java.lang.annotation.*;
 @Inherited
 public @interface Extension {
     /**
-     * extension class别名, 默认使用{@link Class#getName()}和{@link Class#getSimpleName()}
+     * extension class别名, 默认使用{@link Class#getName()}, {@link Class#getSimpleName()}和 {@link Class#getCanonicalName()}
+     * 用于匹配extension实例
+     *
+     * @see ExtensionLoader#getExtension(Class, String)
+     * @see ExtensionLoader#getExtension(Class, String, Object...)
      */
     String value() default "";
 
