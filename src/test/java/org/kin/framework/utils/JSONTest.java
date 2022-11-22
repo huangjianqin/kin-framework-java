@@ -34,6 +34,14 @@ public class JSONTest {
         d1MapData.put("f1", 1);
         d1MapData.put("f2", 1000000000L);
         System.out.println(JSON.convert(d1MapData, D1.class));
+
+        HashMap2 hashMap2 = new HashMap2();
+        hashMap2.put("a", 1);
+        hashMap2.put("b", 2);
+        hashMap2.put("c", 3);
+        hashMap2.put("d", "4");
+        hashMap2.put("e", true);
+        System.out.println(JSON.write(hashMap2));
     }
 
     private static class D1 {
@@ -65,4 +73,8 @@ public class JSONTest {
                     '}';
         }
     }
+
+    private static class HashMap2 extends HashMap<String, Object> {
+    }
+
 }
