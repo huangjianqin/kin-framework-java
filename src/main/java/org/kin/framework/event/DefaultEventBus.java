@@ -43,7 +43,7 @@ public final class DefaultEventBus implements EventBus {
     private volatile boolean stopped;
 
     public DefaultEventBus() {
-        this(true);
+        this(false);
     }
 
     public DefaultEventBus(boolean isEnhance) {
