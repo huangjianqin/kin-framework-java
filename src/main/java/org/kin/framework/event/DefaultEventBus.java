@@ -125,7 +125,7 @@ public final class DefaultEventBus implements EventBus {
 
             Type[] parameterTypes = method.getGenericParameterTypes();
             int paramNum = parameterTypes.length;
-            if (paramNum <= 0 || paramNum > 2) {
+            if (paramNum == 0 || paramNum > 2) {
                 //只处理一个或两个参数的public方法
                 continue;
             }

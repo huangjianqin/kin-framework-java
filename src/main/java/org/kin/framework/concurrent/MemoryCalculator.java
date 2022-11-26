@@ -36,7 +36,7 @@ public final class MemoryCalculator {
             refresh();
             if (refreshStarted.compareAndSet(false, true)) {
                 String name = "memory-calculator";
-                ScheduledExecutorService scheduler = ThreadPoolUtils.newScheduledThreadPool(name, true, 1, new SimpleThreadFactory(name));
+                ScheduledExecutorService scheduler = ThreadPoolUtils.newScheduledThreadPool(name, true, 1, new SimpleThreadFactory(name, true));
                 //50ms刷新一次
                 scheduler.scheduleWithFixedDelay(MemoryCalculator::refresh, 50, 50, TimeUnit.MILLISECONDS);
                 JvmCloseCleaner.instance().add(scheduler::shutdownNow);

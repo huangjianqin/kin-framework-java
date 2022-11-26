@@ -22,4 +22,9 @@ public @interface EventMerge {
 
     /** 时间单位 */
     TimeUnit unit() default TimeUnit.MILLISECONDS;
+
+    /**
+     * @return 单个窗口的事件数量限制, 仅适用于{@link  MergeType#DEBOUNCE}
+     */
+    int maxSize() default Integer.MAX_VALUE;
 }

@@ -63,6 +63,7 @@ class MergedEventHandler<T> implements EventHandler<T> {
      * 分发合并后事件集合
      */
     private void triggerMergedEvents() {
+        future = null;
         //合并后事件集合
         List<T> pendingEvents;
         synchronized (this) {
@@ -80,7 +81,7 @@ class MergedEventHandler<T> implements EventHandler<T> {
     }
 
     /**
-     * 根据窗口规则, 合并事件
+     * 根据窗口规则(一直调度), 合并事件
      */
     private void mergeWindowEvent(T event) {
         //启动window
@@ -92,17 +93,21 @@ class MergedEventHandler<T> implements EventHandler<T> {
     }
 
     /**
-     * 根据抖动规则, 合并事件
+     * 根据抖动规则(有event进入队列才触发调度), 合并事件
      */
     private void mergeDebounceEvent(T event) {
-        //启动window
-        if (Objects.nonNull(future)) {
+        //启动debounce
+        if (Objects.isNull(future)) {
             //重置
-            future.cancel(true);
+            future = eventBus.getScheduler().schedule(this::triggerMergedEvents, eventMerge.window(), eventMerge.unit());
         }
-        future = eventBus.getScheduler().schedule(this::triggerMergedEvents, eventMerge.window(), eventMerge.unit());
 
         pendingEvents.add(event);
+        if (pendingEvents.size() >= eventMerge.maxSize()) {
+            //最大窗口大小
+            future.cancel(true);
+            triggerMergedEvents();
+        }
     }
 
     @Override

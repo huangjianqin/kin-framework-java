@@ -5,9 +5,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
-import java.util.concurrent.CopyOnWriteArrayList;
 
 /**
  * 用于支持一个event, 对应多个event handler的场景
@@ -22,12 +20,12 @@ class MultiEventHandlers<T> implements EventHandler<T> {
     private volatile List<EventHandler<T>> handlers = new ArrayList<>();
 
     @Override
-    public void handle(EventBus eventBus, T event){
+    public void handle(EventBus eventBus, T event) {
         for (EventHandler<T> eventHandler : handlers) {
             try {
                 EventHandler.handleEvent(eventHandler, eventBus, event);
             } catch (Exception e) {
-                log.error("", e);
+                log.error("event handler handle event '{}' error {}", event, e);
             }
         }
     }
@@ -38,7 +36,7 @@ class MultiEventHandlers<T> implements EventHandler<T> {
             try {
                 EventHandler.closeHandler(eventHandler);
             } catch (Exception e) {
-                log.error("", e);
+                log.error("event consumer close error, ", e);
             }
         }
     }
@@ -52,10 +50,5 @@ class MultiEventHandlers<T> implements EventHandler<T> {
         handlers.add(handler);
         OrderedUtils.sort(handlers);
         this.handlers = handlers;
-    }
-
-    //getter
-    List<EventHandler<T>> getHandlers() {
-        return Collections.unmodifiableList(handlers);
     }
 }

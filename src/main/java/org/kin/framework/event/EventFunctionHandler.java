@@ -17,11 +17,11 @@ class EventFunctionHandler<T> implements EventHandler<T>{
     /** 优先级 */
     private final int order;
 
-    public EventFunctionHandler(ProxyInvoker<?> invoker) {
+    EventFunctionHandler(ProxyInvoker<?> invoker) {
         this(invoker, 0, LOWEST_PRECEDENCE);
     }
 
-    public EventFunctionHandler(ProxyInvoker<?> invoker, int eventBusParamIdx) {
+    EventFunctionHandler(ProxyInvoker<?> invoker, int eventBusParamIdx) {
         this(invoker, eventBusParamIdx, LOWEST_PRECEDENCE);
     }
 
