@@ -7,6 +7,7 @@ import java.util.List;
 /**
  * Created by huangjianqin on 2019/3/30.
  */
+@EventListener
 public class DefaultEventBusTest {
     public static void main(String[] args) throws InterruptedException {
         DefaultEventBus eventBus = new DefaultEventBus();

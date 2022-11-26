@@ -116,6 +116,10 @@ public final class DefaultEventBus implements EventBus {
     private void parseEventFuncAndRegister(Object obj) {
         Class<?> claxx = obj.getClass();
 
+        if (!claxx.isAnnotationPresent(EventListener.class)) {
+            throw new IllegalArgumentException(String.format("%s must be annotated with @%s", obj.getClass(), EventListener.class.getSimpleName()));
+        }
+
         //注解在方法
         //在所有  public & 有注解的  方法中寻找一个匹配的方法作为事件处理方法
         for (Method method : claxx.getMethods()) {
