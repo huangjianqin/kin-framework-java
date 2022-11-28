@@ -1,10 +1,14 @@
 package org.kin.framework.utils;
 
 import java.io.*;
+import java.lang.reflect.Field;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
+import java.lang.reflect.Modifier;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
-import java.util.Objects;
-import java.util.Properties;
+import java.util.*;
+import java.util.function.Consumer;
 
 /**
  * @author huangjianqin
@@ -170,5 +174,111 @@ public class PropertiesUtils {
         }
 
         return "";
+    }
+
+    /**
+     * 依据{@link  ConfigurationProperties}将{@link Properties}转换成{@code type}实例
+     *
+     * @param properties properties
+     * @param type       config class
+     * @param <T>        config type
+     * @return config instance
+     */
+    public static <T> T toBean(Properties properties, Class<T> type) {
+        //new
+        T instance = ClassUtils.instance(type);
+        //存储property key name与赋值逻辑的映射
+        Map<String, Consumer<Object>> propKey2Setter = new HashMap<>(16);
+        String prefix = "";
+        ConfigurationProperties anno = type.getAnnotation(ConfigurationProperties.class);
+        if (Objects.nonNull(anno)) {
+            prefix = anno.value();
+        }
+
+        //遍历所有字段
+        for (Field field : ClassUtils.getAllFields(type)) {
+            int modifiers = field.getModifiers();
+            if (Modifier.isFinal(modifiers) ||
+                    Modifier.isStatic(modifiers)) {
+                //过滤掉static | final
+                continue;
+            }
+
+            String propKey = StringUtils.isBlank(prefix) ? "" : prefix + ".";
+            anno = field.getAnnotation(ConfigurationProperties.class);
+            if (Objects.nonNull(anno)) {
+                propKey += anno.value();
+            } else {
+                propKey += field.getName();
+            }
+
+            propKey2Setter.put(propKey, o -> {
+                Class<?> propValClass = o.getClass();
+                Class<?> fieldType = field.getType();
+                if (fieldType.isAssignableFrom(propValClass)) {
+                    //类型兼容
+                    ClassUtils.setFieldValue(instance, field, o);
+                } else {
+                    //转string
+                    ClassUtils.setFieldValue(instance, field, ClassUtils.convertStr2PrimitiveObj(fieldType, o.toString()));
+                }
+            });
+        }
+
+        //遍历所有方法
+        for (Method method : ClassUtils.getAllMethods(type)) {
+            int modifiers = method.getModifiers();
+            if (!Modifier.isPublic(modifiers) ||
+                    Modifier.isAbstract(modifiers) ||
+                    Modifier.isStatic(modifiers)) {
+                //过滤掉非public | abstract | static
+                continue;
+            }
+
+            Class<?>[] paramTypes = method.getParameterTypes();
+            if (paramTypes.length != 1) {
+                //仅仅支持一个参数
+                continue;
+            }
+
+            anno = method.getAnnotation(ConfigurationProperties.class);
+            if (Objects.isNull(anno)) {
+                continue;
+            }
+            String propKey = StringUtils.isBlank(prefix) ? "" : prefix + ".";
+            propKey += anno.value();
+
+            propKey2Setter.put(propKey, o -> {
+                try {
+                    Class<?> propValClass = o.getClass();
+                    Class<?> paramType = paramTypes[0];
+                    if (paramType.isAssignableFrom(propValClass)) {
+                        //类型兼容
+                        method.invoke(instance, o);
+                    } else {
+                        //转string
+                        method.invoke(instance, o.toString());
+                    }
+                } catch (IllegalAccessException | InvocationTargetException e) {
+                    ExceptionUtils.throwExt(e);
+                }
+            });
+        }
+
+        //赋值
+        Enumeration<?> iterator = properties.propertyNames();
+        while (iterator.hasMoreElements()) {
+            Object propKey = iterator.nextElement();
+
+            Consumer<Object> setter = propKey2Setter.get(propKey.toString());
+            if (Objects.isNull(setter)) {
+                continue;
+            }
+
+            //仅支持基础类型和带ConfigurationProperties的方法
+            setter.accept(properties.get(propKey));
+        }
+
+        return instance;
     }
 }
