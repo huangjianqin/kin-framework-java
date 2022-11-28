@@ -38,19 +38,47 @@ public class YamlUtils {
         throw new IllegalStateException("encounter unknown error");
     }
 
+    /**
+     * 加载yaml文件并转换为{@link Properties}
+     *
+     * @param configPath yaml文件路径
+     * @return {@link Properties}实例
+     */
     public static Properties loadYaml2Properties(String configPath) {
         return loadYaml(configPath).toProperties();
     }
 
-    public static String transfer2YamlStr(Properties config) {
-        return Yaml.dump(transfer2Yaml(config));
+    /**
+     * 加载yaml文件并转换为{@code type}实例
+     *
+     * @param configPath yaml文件路径
+     * @return T实例
+     */
+    public static <T> T loadYaml2Bean(String configPath, Class<T> type) {
+        return loadYaml(configPath).toBean(type);
+    }
+
+    /**
+     * 将{@link Properties}转换为yaml字符串
+     *
+     * @param properties properties
+     * @return yaml字符串
+     */
+    public static String transfer2YamlStr(Properties properties) {
+        return Yaml.dump(transfer2Yaml(properties));
     }
 
     //------------------------------------------------------------------------------------------------------------------
 
-    public static Properties transfer2Properties(Map<String, Object> yaml) {
+    /**
+     * 将yaml数据转换成{@link Properties}
+     *
+     * @param yamlData yaml数据
+     * @return {@link Properties}实例
+     */
+    public static Properties transfer2Properties(Map<String, Object> yamlData) {
         Properties properties = new Properties();
-        transfer2Properties(yaml, properties, "");
+        transfer2Properties(yamlData, properties, "");
         return properties;
     }
 
@@ -76,6 +104,9 @@ public class YamlUtils {
 
     //------------------------------------------------------------------------------------------------------------------
 
+    /**
+     * 将A.B.C的properties的map格式转换多层嵌套map
+     */
     public static Map<String, Object> transfer2Yaml(Map config) {
         Map<String, Object> yaml = new HashMap<>();
         transfer2Yaml(yaml, config);
@@ -119,6 +150,9 @@ public class YamlUtils {
     }
 
 
+    /**
+     * 内部类, 封装这yaml数据, 即多层嵌套Map
+     */
     public static class YamlConfig {
         public static final YamlConfig EMPTY = new YamlConfig(Collections.emptyMap());
 
@@ -139,15 +173,38 @@ public class YamlUtils {
             this.yaml = transfer2Yaml(properties);
         }
 
+        /**
+         * 转换成{@link Properties}实例
+         *
+         * @return {@link Properties}实例
+         */
         public Properties toProperties() {
             return transfer2Properties(yaml);
         }
 
+        /**
+         * 转换成java bean
+         *
+         * @param type bean class
+         * @param <T>  bean type
+         * @return java bean
+         */
+        public <T> T toBean(Class<T> type) {
+            return PropertiesUtils.toBean(toProperties(), type);
+        }
+
+        /**
+         * 转成yaml字符串
+         *
+         * @return yaml字符串
+         */
         public String toYamlStr() {
             return Yaml.dump(yaml);
         }
 
         /**
+         * 获取{@code key}对应的值, 可以是具体值或者Map, 即表示下一层
+         *
          * @param key XX.YY.ZZ.....
          * @return value
          */
