@@ -9,7 +9,6 @@ import java.util.List;
 public class YamlUtilsTest {
     public static void main(String[] args) {
         System.out.println(YamlUtils.loadYaml2Bean("test.yaml", Config.class));
-        ;
     }
 
     @ConfigurationProperties("kin")
