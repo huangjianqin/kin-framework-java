@@ -1,9 +1,7 @@
 package org.kin.framework.utils;
 
 import java.io.IOException;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Properties;
+import java.util.*;
 
 /**
  * @author huangjianqin
@@ -12,8 +10,6 @@ import java.util.Properties;
 public class PropertiesUtilsTest {
     public static void main(String[] args) throws IOException {
         Properties properties = new Properties();
-
-        properties.load(PropertiesUtilsTest.class.getClassLoader().getResourceAsStream("test.properties"));
 
         properties.put("kin.a", "1");
         properties.put("kin.b", "2");
@@ -27,7 +23,33 @@ public class PropertiesUtilsTest {
         properties.put("kin.c2.A.c3.B.b3", "22");
         properties.put("kin.c2.A.c3.B.c3", "23");
 
-        System.out.println(PropertiesUtils.toBean(properties, Config.class));
+        //item list
+        Map<String, Object> map = new HashMap<>();
+        map.put("i1", 0);
+        map.put("i2", "i");
+        Map<String, Object> map1 = new HashMap<>();
+        map1.put("i1", 1);
+        map1.put("i2", "ii1");
+        Map<String, Object> map2 = new HashMap<>();
+        map2.put("i1", 2);
+        map2.put("i2", "iii2");
+        properties.put("kin.il", Arrays.asList(map, map1, map2));
+
+        //item map
+        Map<String, Object> map3 = new HashMap<>();
+        map3.put("a", map);
+        map3.put("b", map3);
+        map3.put("c", map2);
+        properties.put("kin.im", map3);
+
+        //primitive map
+        Map<String, Object> map4 = new HashMap<>();
+        map4.put("a", 1);
+        map4.put("b", 2);
+        map4.put("c", 3);
+        properties.put("kin.ip", map4);
+
+        System.out.println(PropertiesUtils.toPropertiesBean(properties, Config.class));
     }
 
     @ConfigurationProperties("kin")
@@ -37,6 +59,9 @@ public class PropertiesUtilsTest {
         private String c;
         private List<String> d;
         private Config2 c2;
+        private List<Item> il;
+        private Map<String, Item> im;
+        private Map<String, Integer> ip;
 
         //setter && getter
         public int getA() {
@@ -79,6 +104,30 @@ public class PropertiesUtilsTest {
             this.c2 = c2;
         }
 
+        public List<Item> getIl() {
+            return il;
+        }
+
+        public void setIl(List<Item> il) {
+            this.il = il;
+        }
+
+        public Map<String, Item> getIm() {
+            return im;
+        }
+
+        public void setIm(Map<String, Item> im) {
+            this.im = im;
+        }
+
+        public Map<String, Integer> getIp() {
+            return ip;
+        }
+
+        public void setIp(Map<String, Integer> ip) {
+            this.ip = ip;
+        }
+
         @Override
         public String toString() {
             return "Config{" +
@@ -87,6 +136,9 @@ public class PropertiesUtilsTest {
                     ", c='" + c + '\'' +
                     ", d=" + d +
                     ", c2=" + c2 +
+                    ", il=" + il +
+                    ", im=" + im +
+                    ", ip=" + ip +
                     '}';
         }
     }
@@ -178,6 +230,37 @@ public class PropertiesUtilsTest {
                     "a3=" + a3 +
                     ", b3='" + b3 + '\'' +
                     ", c3='" + c3 + '\'' +
+                    '}';
+        }
+    }
+
+    public static class Item {
+        private int i1;
+        private String i2;
+
+        //setter && getter
+
+        public int getI1() {
+            return i1;
+        }
+
+        public void setI1(int i1) {
+            this.i1 = i1;
+        }
+
+        public String getI2() {
+            return i2;
+        }
+
+        public void setI2(String i2) {
+            this.i2 = i2;
+        }
+
+        @Override
+        public String toString() {
+            return "Item{" +
+                    "i1=" + i1 +
+                    ", i2='" + i2 + '\'' +
                     '}';
         }
     }

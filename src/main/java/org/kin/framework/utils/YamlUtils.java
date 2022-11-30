@@ -65,7 +65,7 @@ public class YamlUtils {
      * @return yaml字符串
      */
     public static String transfer2YamlStr(Properties properties) {
-        return Yaml.dump(transfer2Yaml(properties));
+        return Yaml.dump(PropertiesUtils.toMultiLvMap(properties));
     }
 
     //------------------------------------------------------------------------------------------------------------------
@@ -104,51 +104,6 @@ public class YamlUtils {
 
     //------------------------------------------------------------------------------------------------------------------
 
-    /**
-     * 将A.B.C的properties的map格式转换多层嵌套map
-     */
-    public static Map<String, Object> transfer2Yaml(Map config) {
-        Map<String, Object> yaml = new HashMap<>();
-        transfer2Yaml(yaml, config);
-        return yaml;
-    }
-
-    /**
-     * 将A.B.C的properties的map格式转换多层嵌套map
-     */
-    private static void transfer2Yaml(Map<String, Object> yaml, Map config) {
-        for (Object key : config.keySet()) {
-            String keyStr = key.toString();
-            if (keyStr.contains("\\.")) {
-                String[] split = keyStr.split("\\.", 2);
-                Map<String, Object> nextLevel = yaml.containsKey(split[0]) ? (Map<String, Object>) yaml.get(split[0]) : new HashMap<>();
-                yaml.put(split[0], nextLevel);
-                deepMap(nextLevel, split[1], config.get(key));
-            } else {
-                yaml.put(key.toString(), config.get(key));
-            }
-        }
-    }
-
-    /**
-     * 不断递归创建多层嵌套map
-     * 尾递归,提交性能
-     *
-     * @param key 下面层数的key+.组成
-     */
-    private static void deepMap(Map<String, Object> nowLevel, String key, Object value) {
-        if (key.contains("\\.")) {
-            String[] split = key.split("\\.", 2);
-            Map<String, Object> nextLevel = nowLevel.containsKey(split[0]) ? (Map<String, Object>) nowLevel.get(split[0]) : new HashMap<>();
-            if (!nowLevel.containsKey(split[0])) {
-                nowLevel.put(split[0], nextLevel);
-            }
-            deepMap(nextLevel, split[1], value);
-        } else {
-            nowLevel.put(key, value);
-        }
-    }
-
 
     /**
      * 内部类, 封装这yaml数据, 即多层嵌套Map
@@ -170,7 +125,7 @@ public class YamlUtils {
         }
 
         public YamlConfig(Properties properties) {
-            this.yaml = transfer2Yaml(properties);
+            this.yaml = PropertiesUtils.toMultiLvMap(properties);
         }
 
         /**
@@ -190,7 +145,7 @@ public class YamlUtils {
          * @return java bean
          */
         public <T> T toBean(Class<T> type) {
-            return PropertiesUtils.toBean(toProperties(), type);
+            return PropertiesUtils.toPropertiesBean(yaml, type);
         }
 
         /**
@@ -210,7 +165,7 @@ public class YamlUtils {
          */
         public Object get(String key) {
             Map copy = new HashMap<>(yaml);
-            String[] splitKeys = key.split("\\.");
+            String[] splitKeys = key.split(PropertiesUtils.PROPERTIES_KEY_SEPARATOR_REGEX);
             for (int i = 0; i < splitKeys.length; i++) {
                 String splitKey = splitKeys[i];
                 Object tmpValue = copy.get(splitKey);
