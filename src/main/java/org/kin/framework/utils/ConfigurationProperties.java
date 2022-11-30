@@ -3,17 +3,19 @@ package org.kin.framework.utils;
 import java.lang.annotation.*;
 
 /**
- * 跟spring boot的@ConfigurationProperties一样
- * 1. 注解在class上, 定义property前缀
- * 2. 注解在public方法上, 参数必须为string, 调用这个方法
+ * spring boot的@ConfigurationProperties简化版
+ * 注解在class上, 定义property前缀
+ * 暂不支持properties数组列表map
  * <p>
- * 逻辑上先遍历字段后遍历方法
- * !注意最后一个字符不要是'.', 不然会报错
+ * 注意
+ * 1. 最后一个字符不要是'.', 不然会匹配异常
+ * 2. 嵌套properties bean使用该注解时, 假如parent bean prefix是a.b, 该bean变量名是c, 同时prefix是d,
+ * 那么最后该bean的前缀是a.b.c.d
  *
  * @author huangjianqin
  * @date 2022/11/28
  */
-@Target({ElementType.TYPE, ElementType.METHOD})
+@Target(ElementType.TYPE)
 @Retention(RetentionPolicy.RUNTIME)
 @Documented
 public @interface ConfigurationProperties {

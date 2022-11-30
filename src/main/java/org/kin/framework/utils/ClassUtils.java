@@ -589,6 +589,32 @@ public class ClassUtils {
     }
 
     /**
+     * @return 是否基础类型, 包含包装类
+     */
+    public static boolean isPrimitiveType(Class<?> claxx) {
+        return String.class.equals(claxx) ||
+                Boolean.class.equals(claxx) || Boolean.TYPE.equals(claxx) ||
+                Byte.class.equals(claxx) || Byte.TYPE.equals(claxx) ||
+                Character.class.equals(claxx) || Character.TYPE.equals(claxx) ||
+                Short.class.equals(claxx) || Short.TYPE.equals(claxx) ||
+                Integer.class.equals(claxx) || Integer.TYPE.equals(claxx) ||
+                Long.class.equals(claxx) || Long.TYPE.equals(claxx) ||
+                Float.class.equals(claxx) || Float.TYPE.equals(claxx) ||
+                Double.class.equals(claxx) || Double.TYPE.equals(claxx);
+    }
+
+    /**
+     * @return 是否是集合类型
+     */
+    public static boolean isCollectionType(Class<?> claxx) {
+        return Collection.class.isAssignableFrom(claxx) ||
+                List.class.isAssignableFrom(claxx) ||
+                Set.class.isAssignableFrom(claxx) ||
+                Map.class.isAssignableFrom(claxx) ||
+                claxx.isArray();
+    }
+
+    /**
      * @return 该类实现的接口是否有指定注解标识
      */
     public static boolean isInterfaceAnnotationPresent(Object o, Class<?> annotation) {
@@ -820,6 +846,115 @@ public class ClassUtils {
         return (Constructor<T>) sun.reflect.ReflectionFactory.getReflectionFactory().newConstructorForSerialization(clazz, OBJECT_CONSTRUCTOR);
     }
 
+    /**
+     * @param className 类名
+     * @return 判断一个类是否存在
+     */
+    public static boolean isClassPresent(String className) {
+        try {
+            getClass(className);
+            return true;
+        } catch (Exception e) {
+            return false;
+        }
+    }
+
+    /**
+     * 生成方法
+     */
+    public static String generateMethodContent(Method method, String methodBody) {
+        StringBuilder sb = new StringBuilder();
+        sb.append(generateMethodDeclaration(method));
+        sb.append("{").append(System.lineSeparator());
+        sb.append(methodBody).append(System.lineSeparator());
+        sb.append("}");
+        return sb.toString();
+    }
+
+    /**
+     * 父类为XXX
+     * 实现类为{prefixName}XXXX
+     * 获取{prefixName}, 全小写
+     *
+     * @param targetClass 实现类
+     * @param baseClass   父类
+     */
+    public static <T> String getPrefixName(Class<? extends T> targetClass, Class<T> baseClass) {
+        String baseName = baseClass.getSimpleName();
+        String targetName = targetClass.getSimpleName();
+
+        int index = targetName.indexOf(baseName);
+        if (index > 0) {
+            return targetName.substring(0, index).toLowerCase();
+        }
+        return null;
+    }
+
+    /**
+     * 根据genericType获取泛型类型, 只支持泛型类型只有一个的情况
+     * get inferred class for generic type, such as Flux like, please refer http://tutorials.jenkov.com/java-reflection/generics.html
+     * <p>
+     * 支持缓存
+     *
+     * @param genericType generic type
+     * @return inferred class
+     */
+    public static Class<?> getInferredClassForGeneric(Type genericType) {
+        //performance promotion by cache
+        if (!GENERIC_TYPES_CACHE.containsKey(genericType)) {
+            try {
+                Class<?> inferredClass = parseInferredClass(genericType);
+                if (inferredClass != null) {
+                    GENERIC_TYPES_CACHE.put(genericType, inferredClass);
+                } else {
+                    GENERIC_TYPES_CACHE.put(genericType, Object.class);
+                }
+            } catch (Exception e) {
+                return Object.class;
+            }
+        }
+        return GENERIC_TYPES_CACHE.get(genericType);
+    }
+
+    /**
+     * get inferred class for Generic Type, please refer http://tutorials.jenkov.com/java-reflection/generics.html
+     *
+     * @param genericType generic type
+     * @return inferred class
+     */
+    public static Class<?> parseInferredClass(Type genericType) {
+        Class<?> inferredClass = null;
+        if (genericType instanceof ParameterizedType) {
+            ParameterizedType type = (ParameterizedType) genericType;
+            Type[] typeArguments = type.getActualTypeArguments();
+            if (typeArguments.length > 0) {
+                final Type typeArgument = typeArguments[0];
+                if (typeArgument instanceof ParameterizedType) {
+                    inferredClass = (Class<?>) ((ParameterizedType) typeArgument).getActualTypeArguments()[0];
+                } else if (typeArgument instanceof Class) {
+                    inferredClass = (Class<?>) typeArgument;
+                } else {
+                    String typeName = typeArgument.getTypeName();
+                    if (typeName.contains(" ")) {
+                        typeName = typeName.substring(typeName.lastIndexOf(" ") + 1);
+                    }
+                    if (typeName.contains("<")) {
+                        typeName = typeName.substring(0, typeName.indexOf("<"));
+                    }
+                    try {
+                        inferredClass = Class.forName(typeName);
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                    }
+                }
+            }
+        }
+        if (inferredClass == null && genericType instanceof Class) {
+            inferredClass = (Class<?>) genericType;
+        }
+        return inferredClass;
+    }
+
     //------------------------------------------------------------字节码相关------------------------------------------------------------
 
     /**
@@ -943,114 +1078,5 @@ public class ClassUtils {
         methodDeclarationStr = methodDeclarationStr.replace("transient ", "");
         methodDeclarationStr = methodDeclarationStr.replace("native ", "");
         return methodDeclarationStr;
-    }
-
-    /**
-     * @param className 类名
-     * @return 判断一个类是否存在
-     */
-    public static boolean isClassPresent(String className) {
-        try {
-            getClass(className);
-            return true;
-        } catch (Exception e) {
-            return false;
-        }
-    }
-
-    /**
-     * 生成方法
-     */
-    public static String generateMethodContent(Method method, String methodBody) {
-        StringBuilder sb = new StringBuilder();
-        sb.append(generateMethodDeclaration(method));
-        sb.append("{").append(System.lineSeparator());
-        sb.append(methodBody).append(System.lineSeparator());
-        sb.append("}");
-        return sb.toString();
-    }
-
-    /**
-     * 父类为XXX
-     * 实现类为{prefixName}XXXX
-     * 获取{prefixName}, 全小写
-     *
-     * @param targetClass 实现类
-     * @param baseClass   父类
-     */
-    public static <T> String getPrefixName(Class<? extends T> targetClass, Class<T> baseClass) {
-        String baseName = baseClass.getSimpleName();
-        String targetName = targetClass.getSimpleName();
-
-        int index = targetName.indexOf(baseName);
-        if (index > 0) {
-            return targetName.substring(0, index).toLowerCase();
-        }
-        return null;
-    }
-
-    /**
-     * 根据genericType获取泛型类型, 只支持泛型类型只有一个的情况
-     * get inferred class for generic type, such as Flux like, please refer http://tutorials.jenkov.com/java-reflection/generics.html
-     * <p>
-     * 支持缓存
-     *
-     * @param genericType generic type
-     * @return inferred class
-     */
-    public static Class<?> getInferredClassForGeneric(Type genericType) {
-        //performance promotion by cache
-        if (!GENERIC_TYPES_CACHE.containsKey(genericType)) {
-            try {
-                Class<?> inferredClass = parseInferredClass(genericType);
-                if (inferredClass != null) {
-                    GENERIC_TYPES_CACHE.put(genericType, inferredClass);
-                } else {
-                    GENERIC_TYPES_CACHE.put(genericType, Object.class);
-                }
-            } catch (Exception e) {
-                return Object.class;
-            }
-        }
-        return GENERIC_TYPES_CACHE.get(genericType);
-    }
-
-    /**
-     * get inferred class for Generic Type, please refer http://tutorials.jenkov.com/java-reflection/generics.html
-     *
-     * @param genericType generic type
-     * @return inferred class
-     */
-    public static Class<?> parseInferredClass(Type genericType) {
-        Class<?> inferredClass = null;
-        if (genericType instanceof ParameterizedType) {
-            ParameterizedType type = (ParameterizedType) genericType;
-            Type[] typeArguments = type.getActualTypeArguments();
-            if (typeArguments.length > 0) {
-                final Type typeArgument = typeArguments[0];
-                if (typeArgument instanceof ParameterizedType) {
-                    inferredClass = (Class<?>) ((ParameterizedType) typeArgument).getActualTypeArguments()[0];
-                } else if (typeArgument instanceof Class) {
-                    inferredClass = (Class<?>) typeArgument;
-                } else {
-                    String typeName = typeArgument.getTypeName();
-                    if (typeName.contains(" ")) {
-                        typeName = typeName.substring(typeName.lastIndexOf(" ") + 1);
-                    }
-                    if (typeName.contains("<")) {
-                        typeName = typeName.substring(0, typeName.indexOf("<"));
-                    }
-                    try {
-                        inferredClass = Class.forName(typeName);
-                    } catch (Exception e) {
-                        e.printStackTrace();
-                    }
-                }
-            }
-        }
-        if (inferredClass == null && genericType instanceof Class) {
-            inferredClass = (Class<?>) genericType;
-        }
-        return inferredClass;
     }
 }

@@ -2,8 +2,6 @@ package org.kin.framework.utils;
 
 import java.io.*;
 import java.lang.reflect.Field;
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
@@ -15,6 +13,9 @@ import java.util.function.Consumer;
  * @date 2019/7/6
  */
 public class PropertiesUtils {
+    /** properties key分隔离 */
+    public static final String PROPERTIES_KEY_SEPARATOR = ".";
+
     /**
      * 读取properties文件
      * 如果字符串是file:开头, 则是基于相对路径读取properties文件
@@ -182,6 +183,7 @@ public class PropertiesUtils {
      * @param properties properties
      * @param type       config class
      * @param <T>        config type
+     * @param prefix     property key前缀, 不能以'.'结尾
      * @return config instance
      */
     public static <T> T toBean(Properties properties, Class<T> type) {
@@ -189,12 +191,48 @@ public class PropertiesUtils {
         T instance = ClassUtils.instance(type);
         //存储property key name与赋值逻辑的映射
         Map<String, Consumer<Object>> propKey2Setter = new HashMap<>(16);
+
         String prefix = "";
         ConfigurationProperties anno = type.getAnnotation(ConfigurationProperties.class);
         if (Objects.nonNull(anno)) {
-            prefix = anno.value();
+            prefix += anno.value();
         }
 
+        parsePropertiesBeanField(instance, type, propKey2Setter, prefix);
+
+        //赋值
+        Enumeration<?> iterator = properties.propertyNames();
+        while (iterator.hasMoreElements()) {
+            Object propKey = iterator.nextElement();
+
+            String propKeyStr = propKey.toString();
+            Consumer<Object> setter = propKey2Setter.get(propKeyStr);
+            if (Objects.isNull(setter)) {
+                //遍历所有property key, 看能不能找到有一样前缀的
+                for (String k : propKey2Setter.keySet()) {
+                    if (propKeyStr.startsWith(k)) {
+                        setter = propKey2Setter.get(k);
+                        break;
+                    }
+                }
+            }
+
+            //仅支持基础类型和带ConfigurationProperties的方法
+            setter.accept(properties.get(propKey));
+        }
+
+        return instance;
+    }
+
+    /**
+     * 解析properties bean字段, 包含递归解析嵌套properties bean字段
+     *
+     * @param instance       properties bean实例
+     * @param type           properties bean类型
+     * @param propKey2Setter 存储property key name与赋值逻辑的映射
+     * @param prefix         property key root prefix
+     */
+    private static void parsePropertiesBeanField(Object instance, Class<?> type, Map<String, Consumer<Object>> propKey2Setter, String prefix) {
         //遍历所有字段
         for (Field field : ClassUtils.getAllFields(type)) {
             int modifiers = field.getModifiers();
@@ -204,81 +242,45 @@ public class PropertiesUtils {
                 continue;
             }
 
-            String propKey = StringUtils.isBlank(prefix) ? "" : prefix + ".";
-            anno = field.getAnnotation(ConfigurationProperties.class);
+            String propKey = StringUtils.isBlank(prefix) ? "" : prefix + PROPERTIES_KEY_SEPARATOR;
+            ConfigurationProperties anno = field.getAnnotation(ConfigurationProperties.class);
             if (Objects.nonNull(anno)) {
                 propKey += anno.value();
             } else {
                 propKey += field.getName();
             }
 
+            Class<?> fieldType = field.getType();
+
             propKey2Setter.put(propKey, o -> {
                 Class<?> propValClass = o.getClass();
-                Class<?> fieldType = field.getType();
-                if (fieldType.isAssignableFrom(propValClass)) {
+                if (ClassUtils.isAssignable(fieldType, propValClass)) {
                     //类型兼容
                     ClassUtils.setFieldValue(instance, field, o);
                 } else {
-                    //转string
-                    ClassUtils.setFieldValue(instance, field, ClassUtils.convertStr2PrimitiveObj(fieldType, o.toString()));
-                }
-            });
-        }
-
-        //遍历所有方法
-        for (Method method : ClassUtils.getAllMethods(type)) {
-            int modifiers = method.getModifiers();
-            if (!Modifier.isPublic(modifiers) ||
-                    Modifier.isAbstract(modifiers) ||
-                    Modifier.isStatic(modifiers)) {
-                //过滤掉非public | abstract | static
-                continue;
-            }
-
-            Class<?>[] paramTypes = method.getParameterTypes();
-            if (paramTypes.length != 1) {
-                //仅仅支持一个参数
-                continue;
-            }
-
-            anno = method.getAnnotation(ConfigurationProperties.class);
-            if (Objects.isNull(anno)) {
-                continue;
-            }
-            String propKey = StringUtils.isBlank(prefix) ? "" : prefix + ".";
-            propKey += anno.value();
-
-            propKey2Setter.put(propKey, o -> {
-                try {
-                    Class<?> propValClass = o.getClass();
-                    Class<?> paramType = paramTypes[0];
-                    if (paramType.isAssignableFrom(propValClass)) {
-                        //类型兼容
-                        method.invoke(instance, o);
-                    } else {
-                        //转string
-                        method.invoke(instance, o.toString());
+                    if (ClassUtils.isPrimitiveType(fieldType)) {
+                        //基础类型
+                        ClassUtils.setFieldValue(instance, field, ClassUtils.convertStr2PrimitiveObj(fieldType, o.toString()));
                     }
-                } catch (IllegalAccessException | InvocationTargetException e) {
-                    ExceptionUtils.throwExt(e);
                 }
             });
-        }
 
-        //赋值
-        Enumeration<?> iterator = properties.propertyNames();
-        while (iterator.hasMoreElements()) {
-            Object propKey = iterator.nextElement();
-
-            Consumer<Object> setter = propKey2Setter.get(propKey.toString());
-            if (Objects.isNull(setter)) {
-                continue;
+            if (!ClassUtils.isPrimitiveType(fieldType) &&
+                    !ClassUtils.isCollectionType(fieldType) &&
+                    !Object.class.equals(fieldType)) {
+                //不是基础类, 也不是集合类, 那么就认为是嵌套bean
+                //解析嵌套bean类
+                //1. new
+                Object fieldInst = ClassUtils.instance(fieldType);
+                //2. set
+                ClassUtils.setFieldValue(instance, field, fieldInst);
+                //3. parse
+                anno = fieldType.getAnnotation(ConfigurationProperties.class);
+                if (Objects.nonNull(anno)) {
+                    propKey += PROPERTIES_KEY_SEPARATOR + anno.value();
+                }
+                parsePropertiesBeanField(fieldInst, fieldType, propKey2Setter, propKey);
             }
-
-            //仅支持基础类型和带ConfigurationProperties的方法
-            setter.accept(properties.get(propKey));
         }
-
-        return instance;
     }
 }
