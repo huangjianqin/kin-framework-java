@@ -860,18 +860,6 @@ public class ClassUtils {
     }
 
     /**
-     * 生成方法
-     */
-    public static String generateMethodContent(Method method, String methodBody) {
-        StringBuilder sb = new StringBuilder();
-        sb.append(generateMethodDeclaration(method));
-        sb.append("{").append(System.lineSeparator());
-        sb.append(methodBody).append(System.lineSeparator());
-        sb.append("}");
-        return sb.toString();
-    }
-
-    /**
      * 父类为XXX
      * 实现类为{prefixName}XXXX
      * 获取{prefixName}, 全小写
@@ -956,6 +944,18 @@ public class ClassUtils {
     }
 
     //------------------------------------------------------------字节码相关------------------------------------------------------------
+
+    /**
+     * 生成方法
+     */
+    public static String generateMethodContent(Method method, String methodBody) {
+        StringBuilder sb = new StringBuilder();
+        sb.append(generateMethodDeclaration(method));
+        sb.append("{").append(System.lineSeparator());
+        sb.append(methodBody).append(System.lineSeparator());
+        sb.append("}");
+        return sb.toString();
+    }
 
     /**
      * 基础类型封箱
