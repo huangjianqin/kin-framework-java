@@ -367,9 +367,7 @@ public class PropertiesUtils {
             //数组
             Class<?> componentType = fieldType.getComponentType();
             if (ClassUtils.isCollectionOrMapType(componentType)) {
-                // TODO: 2022/11/30 看看yaml支不支持嵌套
-                //集合嵌套, 不处理, 返回空数组
-                return Array.newInstance(componentType, 0);
+                throw new UnsupportedOperationException("array collection and map nested within each other are not supported");
             }
 
             List<?> list = (List<?>) value;
@@ -434,9 +432,7 @@ public class PropertiesUtils {
                 Class<?> itemType = (Class<?>) parameterizedType.getActualTypeArguments()[0];
 
                 if (ClassUtils.isCollectionOrMapType(itemType)) {
-                    // TODO: 2022/11/30
-                    //集合嵌套, 不处理
-                    throw new UnsupportedOperationException();
+                    throw new UnsupportedOperationException("array collection and map nested within each other are not supported");
                 }
 
                 if (Object.class.equals(itemType)) {
@@ -489,9 +485,7 @@ public class PropertiesUtils {
         Class<?> valueType = (Class<?>) parameterizedType.getActualTypeArguments()[1];
 
         if (ClassUtils.isCollectionOrMapType(valueType)) {
-            // TODO: 2022/11/30
-            //map嵌套, 不处理
-            throw new UnsupportedOperationException();
+            throw new UnsupportedOperationException("array collection and map nested within each other are not supported");
         }
 
         Map map = new HashMap();
