@@ -31,7 +31,6 @@ public class MD5 {
 
     /**
      * 计算MD5编码
-     * @param input
      */
     public String encode(String input) {
         byte[] md5;
