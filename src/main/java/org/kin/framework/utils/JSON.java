@@ -210,6 +210,33 @@ public class JSON {
     }
 
     /**
+     * 解析map json
+     *
+     * @param bytes      json字符串bytes
+     * @param keyClass   key类型
+     * @param valueClass value类型
+     */
+    public static <K, V> Map<K, V> readMap(byte[] bytes, Class<K> keyClass, Class<V> valueClass) {
+        JavaType mapType = PARSER.getTypeFactory().constructMapType(HashMap.class, keyClass, valueClass);
+        try {
+            return PARSER.readValue(bytes, mapType);
+        } catch (IOException e) {
+            ExceptionUtils.throwExt(e);
+        }
+
+        throw new IllegalStateException("encounter unknown error");
+    }
+
+    /**
+     * 解析map json
+     *
+     * @param bytes json字符串bytes
+     */
+    public static Map<String, Object> readMap(byte[] bytes) {
+        return readMap(bytes, String.class, Object.class);
+    }
+
+    /**
      * 将json形式的map数据转换成对象
      */
     public static <C> C convert(Object jsonObj, Class<? extends C> targetClass) {
