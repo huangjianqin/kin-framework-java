@@ -40,5 +40,11 @@ public class StringUtilsTest {
         System.out.println(StringUtils.isNumeric("abc1234123213"));
         System.out.println(StringUtils.isNumeric("12341abvas23213"));
         System.out.println(StringUtils.isNumeric("--12341asgsa23213"));
+
+        System.out.println("-------------------------------------------------------------");
+        System.out.println(StringUtils.randomString(10));
+        System.out.println(StringUtils.randomString(50));
+        System.out.println(StringUtils.randomString(250));
+        System.out.println(StringUtils.randomString(1250));
     }
 }

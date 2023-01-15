@@ -2,6 +2,7 @@ package org.kin.framework.utils;
 
 import java.util.Collection;
 import java.util.Map;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -13,6 +14,8 @@ public class StringUtils {
     private static final String DELIMITER = ",";
     private static final String KV_DELIMITER = "=";
     private static final String ALL_MATCH_PATTERN = "*";
+    /** 常用字符 */
+    private static final char[] CHARS = "QWERTYUIOPASDFGHJKLZXCVBNMqwertyuiopasdfghjklzxcvbnm1234567890~!@#$%^&*()-=_+[]{};:,./<>?|".toCharArray();
 
     /**
      * 字符串是否为空(null or 空串)
@@ -272,5 +275,21 @@ public class StringUtils {
         }
 
         return false;
+    }
+
+    /**
+     * 随机生成长度为{@code len}的字符串
+     *
+     * @param len 字符串长度
+     * @return 字符串
+     */
+    public static String randomString(int len) {
+        StringBuilder sb = new StringBuilder();
+        for (int i = 0; i < len; i++) {
+            int index = ThreadLocalRandom.current().nextInt(CHARS.length);
+            sb.append(CHARS[index]);
+        }
+
+        return sb.toString();
     }
 }
