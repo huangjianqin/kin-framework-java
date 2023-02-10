@@ -1,7 +1,7 @@
 package org.kin.framework.utils;
 
-import org.kin.framework.utils.reflection.FieldUpdaters;
-import org.kin.framework.utils.reflection.ReferenceFieldUpdater;
+import org.kin.framework.utils.fieldupdater.FieldUpdaters;
+import org.kin.framework.utils.fieldupdater.ReferenceFieldUpdater;
 
 import java.io.PrintWriter;
 import java.io.StringWriter;
