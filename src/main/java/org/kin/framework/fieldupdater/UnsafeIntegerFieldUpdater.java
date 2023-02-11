@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.kin.framework.utils.fieldupdater;
+package org.kin.framework.fieldupdater;
 
 import sun.misc.Unsafe;
 
@@ -23,27 +23,26 @@ import sun.misc.Unsafe;
  * @author huangjianqin
  * @date 2021/11/27
  */
-@SuppressWarnings("unchecked")
-final class UnsafeReferenceFieldUpdater<U, W> extends AbstractUnsafeFieldUpdater implements ReferenceFieldUpdater<U, W> {
-    UnsafeReferenceFieldUpdater(Unsafe unsafe, Class<? super U> tClass, String fieldName) throws NoSuchFieldException {
+final class UnsafeIntegerFieldUpdater<U> extends AbstractUnsafeFieldUpdater implements IntegerFieldUpdater<U> {
+    UnsafeIntegerFieldUpdater(Unsafe unsafe, Class<? super U> tClass, String fieldName) throws NoSuchFieldException {
         super(unsafe, tClass, fieldName);
     }
 
     @Override
-    public void set(U obj, W newValue) {
+    public void set(U obj, int newValue) {
         if (volatileField) {
-            unsafe.putObjectVolatile(obj, offset, newValue);
+            unsafe.putIntVolatile(obj, offset, newValue);
         } else {
-            unsafe.putObject(obj, offset, newValue);
+            unsafe.putInt(obj, offset, newValue);
         }
     }
 
     @Override
-    public W get(U obj) {
+    public int get(U obj) {
         if (volatileField) {
-            return (W) unsafe.getObjectVolatile(obj, offset);
+            return unsafe.getIntVolatile(obj, offset);
         } else {
-            return (W) unsafe.getObject(obj, offset);
+            return unsafe.getInt(obj, offset);
         }
     }
 }

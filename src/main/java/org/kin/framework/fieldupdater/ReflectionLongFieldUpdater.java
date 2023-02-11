@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.kin.framework.utils.fieldupdater;
+package org.kin.framework.fieldupdater;
 
 /**
  * Forked from <a href="https://github.com/fengjiachun/Jupiter">Jupiter</a>.
@@ -21,9 +21,18 @@ package org.kin.framework.utils.fieldupdater;
  * @author huangjianqin
  * @date 2021/11/27
  */
-public interface IntegerFieldUpdater<U> {
+final class ReflectionLongFieldUpdater<U> extends AbstractReflectionFieldUpdater implements LongFieldUpdater<U> {
+    ReflectionLongFieldUpdater(Class<? super U> tClass, String fieldName) throws NoSuchFieldException {
+        super(tClass, fieldName);
+    }
 
-    void set(U obj, int newValue);
+    @Override
+    public void set(U obj, long newValue) {
+        set0(obj, newValue);
+    }
 
-    int get(U obj);
+    @Override
+    public long get(U obj) {
+        return (long) get0(obj);
+    }
 }

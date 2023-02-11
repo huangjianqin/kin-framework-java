@@ -13,7 +13,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.kin.framework.utils.fieldupdater;
+package org.kin.framework.fieldupdater;
+
+import sun.misc.Unsafe;
 
 /**
  * Forked from <a href="https://github.com/fengjiachun/Jupiter">Jupiter</a>.
@@ -22,18 +24,26 @@ package org.kin.framework.utils.fieldupdater;
  * @date 2021/11/27
  */
 @SuppressWarnings("unchecked")
-final class ReflectionReferenceFieldUpdater<U, W> extends AbstractReflectionFieldUpdater implements ReferenceFieldUpdater<U, W> {
-    ReflectionReferenceFieldUpdater(Class<? super U> tClass, String fieldName) throws NoSuchFieldException {
-        super(tClass, fieldName);
+final class UnsafeReferenceFieldUpdater<U, W> extends AbstractUnsafeFieldUpdater implements ReferenceFieldUpdater<U, W> {
+    UnsafeReferenceFieldUpdater(Unsafe unsafe, Class<? super U> tClass, String fieldName) throws NoSuchFieldException {
+        super(unsafe, tClass, fieldName);
     }
 
     @Override
     public void set(U obj, W newValue) {
-        set0(obj, newValue);
+        if (volatileField) {
+            unsafe.putObjectVolatile(obj, offset, newValue);
+        } else {
+            unsafe.putObject(obj, offset, newValue);
+        }
     }
 
     @Override
     public W get(U obj) {
-        return (W) get0(obj);
+        if (volatileField) {
+            return (W) unsafe.getObjectVolatile(obj, offset);
+        } else {
+            return (W) unsafe.getObject(obj, offset);
+        }
     }
 }

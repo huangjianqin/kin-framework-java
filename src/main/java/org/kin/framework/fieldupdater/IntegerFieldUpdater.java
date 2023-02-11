@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.kin.framework.utils.fieldupdater;
+package org.kin.framework.fieldupdater;
 
 /**
  * Forked from <a href="https://github.com/fengjiachun/Jupiter">Jupiter</a>.
@@ -21,9 +21,9 @@ package org.kin.framework.utils.fieldupdater;
  * @author huangjianqin
  * @date 2021/11/27
  */
-public interface LongFieldUpdater<U> {
+public interface IntegerFieldUpdater<U> {
 
-    void set(U obj, long newValue);
+    void set(U obj, int newValue);
 
-    long get(U obj);
+    int get(U obj);
 }

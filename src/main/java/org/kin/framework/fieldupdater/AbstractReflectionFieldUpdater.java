@@ -1,4 +1,4 @@
-package org.kin.framework.utils.fieldupdater;
+package org.kin.framework.fieldupdater;
 
 import java.lang.reflect.Field;
 
