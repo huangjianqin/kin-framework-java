@@ -37,6 +37,8 @@ public class OrderedEventLoop<P extends OrderedEventLoop<P>> implements EventLoo
     private volatile boolean stopped = false;
     /** 内置Runnable */
     private final Loop loop = new Loop();
+    /** event loop context */
+    private final EventLoopContext context = new EventLoopContext();
 
     public OrderedEventLoop(EventLoopGroup<P> eventLoopGroup, ExecutionContext executionContext) {
         this.eventLoopGroup = eventLoopGroup;
@@ -223,27 +225,32 @@ public class OrderedEventLoop<P extends OrderedEventLoop<P>> implements EventLoo
         @Override
         public final void run() {
             currentThread = Thread.currentThread();
-            while (!isShutdown() && !currentThread.isInterrupted()) {
-                Message<P> message = inBox.poll();
-                if (message == null) {
-                    break;
-                }
+            EventLoopContext.update(context);
+            try {
+                while (!isShutdown() && !currentThread.isInterrupted()) {
+                    Message<P> message = inBox.poll();
+                    if (message == null) {
+                        break;
+                    }
 
-                long st = System.currentTimeMillis();
-                try {
-                    message.handle((P) OrderedEventLoop.this);
-                } catch (Exception e) {
-                    log.error("", e);
-                }
-                long cost = System.currentTimeMillis() - st;
+                    long st = System.currentTimeMillis();
+                    try {
+                        message.handle((P) OrderedEventLoop.this);
+                    } catch (Exception e) {
+                        log.error("", e);
+                    }
+                    long cost = System.currentTimeMillis() - st;
 
-                if (cost >= getWarnMsgCostTime()) {
-                    log.warn("handle message({}) cost {} ms", message, cost);
-                }
+                    if (cost >= getWarnMsgCostTime()) {
+                        log.warn("handle message({}) cost {} ms", message, cost);
+                    }
 
-                if (boxSize.decrementAndGet() <= 0) {
-                    break;
+                    if (boxSize.decrementAndGet() <= 0) {
+                        break;
+                    }
                 }
+            } finally {
+                EventLoopContext.remove();
             }
         }
     }
