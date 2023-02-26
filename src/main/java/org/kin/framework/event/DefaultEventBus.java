@@ -35,23 +35,16 @@ public final class DefaultEventBus implements EventBus {
 
     /** key -> event class, value -> event handler */
     private final Map<Class<?>, EventHandler<?>> event2Handler = new NonBlockingHashMap<>();
-    /** 是否使用字节码增强技术 */
-    private final boolean isEnhance;
     /** 调度线程 */
     private final ExecutionContext scheduler;
 
     private volatile boolean stopped;
 
     public DefaultEventBus() {
-        this(false);
+        this(ExecutionContext.fix(SysUtils.CPU_NUM, "defaultEventBus", 2));
     }
 
-    public DefaultEventBus(boolean isEnhance) {
-        this(isEnhance, ExecutionContext.fix(SysUtils.CPU_NUM, "defaultEventBus", 2));
-    }
-
-    public DefaultEventBus(boolean isEnhance, ExecutionContext scheduler) {
-        this.isEnhance = isEnhance;
+    public DefaultEventBus(ExecutionContext scheduler) {
         this.scheduler = scheduler;
     }
 
@@ -199,12 +192,7 @@ public final class DefaultEventBus implements EventBus {
      * @return {@link EventFunction} 注解方法代理类
      */
     private ProxyInvoker<?> generateEventFuncMethodInvoker(Object obj, Method method) {
-        MethodDefinition<Object> methodDefinition = new MethodDefinition<>(obj, method);
-        if (isEnhance) {
-            return Proxys.byteBuddy().enhanceMethod(methodDefinition);
-        } else {
-            return Proxys.reflection().enhanceMethod(methodDefinition);
-        }
+        return Proxys.adaptive().enhanceMethod(new MethodDefinition<>(obj, method));
     }
 
     /**
