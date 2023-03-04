@@ -604,13 +604,23 @@ public class ClassUtils {
     }
 
     /**
-     * @return 是否是集合类型
+     * @return 是否是集合类型orMap类型
      */
     public static boolean isCollectionOrMapType(Class<?> claxx) {
         return Collection.class.isAssignableFrom(claxx) ||
                 List.class.isAssignableFrom(claxx) ||
                 Set.class.isAssignableFrom(claxx) ||
                 Map.class.isAssignableFrom(claxx) ||
+                claxx.isArray();
+    }
+
+    /**
+     * @return 是否是集合类型
+     */
+    public static boolean isCollectionType(Class<?> claxx) {
+        return Collection.class.isAssignableFrom(claxx) ||
+                List.class.isAssignableFrom(claxx) ||
+                Set.class.isAssignableFrom(claxx) ||
                 claxx.isArray();
     }
 
