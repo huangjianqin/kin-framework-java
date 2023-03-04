@@ -82,6 +82,32 @@ public class ClassUtils {
     }
 
     /**
+     * classpath扫描配置
+     */
+    public static class ScanOptions {
+        private boolean includeJar;
+        private boolean includeInnerClass;
+
+        public boolean isIncludeJar() {
+            return includeJar;
+        }
+
+        public ScanOptions includeJar(boolean includeJar) {
+            this.includeJar = includeJar;
+            return this;
+        }
+
+        public boolean isIncludeInnerClass() {
+            return includeInnerClass;
+        }
+
+        public ScanOptions includeInnerClass(boolean includeInnerClass) {
+            this.includeInnerClass = includeInnerClass;
+            return this;
+        }
+    }
+
+    /**
      * 通过无参构造器实例化类
      */
     public static <T> T instance(Class<T> claxx) {
@@ -180,16 +206,32 @@ public class ClassUtils {
      * 获取某个类的所有子类, 但不包括该类
      */
     @SuppressWarnings("unchecked")
-    public static <T> Set<Class<? extends T>> getSubClass(String packageName, Class<T> parent, boolean isIncludeJar) {
+    public static <T> Set<Class<? extends T>> getSubClass(String packageName, Class<T> parent, boolean includeJar) {
+        return getSubClass(packageName, parent, new ScanOptions().includeJar(includeJar));
+    }
+
+    /**
+     * 获取某个类的所有子类, 但不包括该类
+     */
+    @SuppressWarnings("unchecked")
+    public static <T> Set<Class<? extends T>> getSubClass(String packageName, Class<T> parent, ScanOptions options) {
         return scanClasspathAndFindMatch(packageName, parent,
-                (c, target) -> !c.equals(target) && c.isAssignableFrom(target), isIncludeJar);
+                (c, target) -> !c.equals(target) && c.isAssignableFrom(target), options);
     }
 
     /**
      * 获取出现某注解的所有类, 包括抽象类和接口
      */
     @SuppressWarnings("unchecked")
-    public static <T> Set<Class<? extends T>> getAnnotationedClass(String packageName, Class<T> annotationClass, boolean isIncludeJar) {
+    public static <T> Set<Class<? extends T>> getAnnotationedClass(String packageName, Class<T> annotationClass, boolean includeJar) {
+        return getAnnotationedClass(packageName, annotationClass, new ScanOptions().includeJar(includeJar));
+    }
+
+    /**
+     * 获取出现某注解的所有类, 包括抽象类和接口
+     */
+    @SuppressWarnings("unchecked")
+    public static <T> Set<Class<? extends T>> getAnnotationedClass(String packageName, Class<T> annotationClass, ScanOptions options) {
         if (annotationClass.isAnnotation()) {
             return scanClasspathAndFindMatch(packageName, annotationClass,
                     (c, target) -> {
@@ -210,13 +252,13 @@ public class ClassUtils {
                         }
 
                         return false;
-                    }, isIncludeJar);
+                    }, options);
         }
         return Collections.emptySet();
     }
 
     @SuppressWarnings("rawtypes")
-    public static <T> Set<Class<? extends T>> scanClasspathAndFindMatch(String packageName, Class<T> c, Matcher matcher, boolean isIncludeJar) {
+    public static <T> Set<Class<? extends T>> scanClasspathAndFindMatch(String packageName, Class<T> c, Matcher matcher, ScanOptions options) {
         ClassLoader contextClassLoader = Thread.currentThread().getContextClassLoader();
         ClassLoader staticClassLoader = ClassUtils.class.getClassLoader();
         ClassLoader[] classLoaders = contextClassLoader != null ?
@@ -226,14 +268,14 @@ public class ClassUtils {
 
         Set<Class<? extends T>> subClasses = Sets.newLinkedHashSet();
         for (ClassLoader classLoader : classLoaders) {
-            subClasses.addAll(scanClasspathAndFindMatch(classLoader, packageName, c, matcher, isIncludeJar));
+            subClasses.addAll(scanClasspathAndFindMatch(classLoader, packageName, c, matcher, options));
         }
 
         return subClasses;
     }
 
     @SuppressWarnings({"unchecked", "rawtypes"})
-    public static <T> Set<Class<T>> scanClasspathAndFindMatch(ClassLoader contextClassLoader, String packageName, Class<T> c, Matcher matcher, boolean isIncludeJar) {
+    public static <T> Set<Class<T>> scanClasspathAndFindMatch(ClassLoader contextClassLoader, String packageName, Class<T> c, Matcher matcher, ScanOptions options) {
         Set<Class<T>> subClasses = Sets.newLinkedHashSet();
 
         String packageResource = packageName.replaceAll("\\.", "/");
@@ -267,7 +309,7 @@ public class ClassUtils {
 
                                 if (StringUtils.isNotBlank(className) &&
                                         !INNER_PATTERN.matcher(className).find() &&
-                                        (className.indexOf("$") <= 0)) {
+                                        (options.includeInnerClass || className.indexOf("$") <= 0)) {
                                     try {
                                         return (Class<T>) contextClassLoader.loadClass(className);
                                     } catch (ClassNotFoundException e) {
@@ -279,7 +321,7 @@ public class ClassUtils {
                             .filter(claxx -> !Objects.isNull(claxx))
                             .filter(claxx -> matcher.match(c, claxx)).collect(Collectors.toSet());
                     subClasses.addAll(Sets.newHashSet(classes));
-                } else if ("jar".equals(url.getProtocol()) && isIncludeJar) {
+                } else if (options.includeJar && "jar".equals(url.getProtocol())) {
                     JarURLConnection jarURLConnection = (JarURLConnection) url.openConnection();
                     JarFile jarFile = jarURLConnection.getJarFile();
                     Enumeration<JarEntry> jarEntries = jarFile.entries();
@@ -295,7 +337,8 @@ public class ClassUtils {
                             continue;
                         }
 
-                        if (INNER_PATTERN.matcher(entryName).find() || entryName.indexOf("$") > 0) {
+                        if (!options.includeInnerClass && (INNER_PATTERN.matcher(entryName).find() || entryName.indexOf("$") > 0)) {
+                            //过滤内部类
                             continue;
                         }
 
