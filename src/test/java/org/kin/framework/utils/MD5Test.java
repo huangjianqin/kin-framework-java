@@ -6,6 +6,14 @@ package org.kin.framework.utils;
  */
 public class MD5Test {
     public static void main(String[] args) {
-        System.out.println(MD5.common().encode("kin1234567890"));
+        //全量计算
+        String target = "kin1234567890";
+        System.out.println(MD5.common().digestAsHex(target));
+
+        //增量计算
+        for (char c : target.toCharArray()) {
+            MD5.current().update(c + "");
+        }
+        System.out.println(MD5.current().digestAsHex());
     }
 }
