@@ -6,6 +6,7 @@ import org.kin.framework.collection.Tuple;
 import sun.reflect.generics.reflectiveObjects.ParameterizedTypeImpl;
 import sun.reflect.generics.reflectiveObjects.TypeVariableImpl;
 
+import javax.annotation.Nullable;
 import java.io.IOException;
 import java.lang.reflect.*;
 import java.net.JarURLConnection;
@@ -751,10 +752,10 @@ public class ClassUtils {
             return Collections.emptyList();
         }
 
-        //临时缓存父类泛型参数名字以及类型的对应关系
-        Map<String, Type> paramName2Type = new HashMap<>();
         Type target = claxx;
         while (!Object.class.equals(target)) {
+            //缓存泛型参数名字以及类型的对应关系
+            Map<String, Type> paramName2Type = new HashMap<>();
             Type[] genericInterfaces;
             if (target instanceof Class) {
                 genericInterfaces = ((Class<?>) target).getGenericInterfaces();
@@ -773,37 +774,105 @@ public class ClassUtils {
                 }
                 target = parameterizedType.getRawType().getGenericSuperclass();
             } else {
-                throw new IllegalStateException("unhandle statment");
+                throw new IllegalStateException("unknown exception");
             }
-            for (Type genericInterface : genericInterfaces) {
-                if (!(genericInterface instanceof ParameterizedType)) {
-                    continue;
-                }
-                ParameterizedType parameterizedInterface = (ParameterizedType) genericInterface;
-                if (!parameterizedInterface.getRawType().equals(interfaceClass)) {
-                    continue;
-                }
-                //找到对应的interfaceClass
-                List<Type> result = new ArrayList<>();
-                for (Type actualTypeArgument : parameterizedInterface.getActualTypeArguments()) {
-                    if (actualTypeArgument instanceof TypeVariableImpl) {
-                        //父类中, 根据泛型参数名字获取对应的类型
-                        TypeVariableImpl<?> typeVariable = (TypeVariableImpl<?>) actualTypeArgument;
-                        String paramName = typeVariable.getName();
-                        if (paramName2Type.containsKey(paramName)) {
-                            result.add(paramName2Type.get(paramName));
-                        }
-                    } else {
-                        result.add(actualTypeArgument);
-                    }
-                }
 
+            List<Type> result = getActualTypesFromInterfaces(interfaceClass, genericInterfaces, paramName2Type);
+            if (CollectionUtils.isNonEmpty(result)) {
                 return result;
             }
         }
 
-
         return Collections.emptyList();
+    }
+
+    /**
+     * 从直接父接口寻找目标接口的实际类型信息
+     *
+     * @param interfaceClass    目标接口
+     * @param genericInterfaces 实现的接口泛化信息
+     * @param paramName2Type    泛型参数名字以及类型的对应关系缓存
+     * @return 实际类型信息, 如果null, 则表明没有寻找到目标接口, 否则, 即找到目标接口的实际类型信息
+     */
+    @Nullable
+    private static List<Type> getActualTypesFromInterfaces(Class<?> interfaceClass, Type[] genericInterfaces, Map<String, Type> paramName2Type) {
+        for (Type genericInterface : genericInterfaces) {
+            if (!(genericInterface instanceof ParameterizedType)) {
+                //过滤掉非泛化类型
+                continue;
+            }
+
+            ParameterizedType parameterizedInterface = (ParameterizedType) genericInterface;
+            if (!parameterizedInterface.getRawType().equals(interfaceClass)) {
+                //类型不同, 尝试从父类寻找
+                List<Type> result = tryGetActualTypesFromSuperInterfaces(interfaceClass, (ParameterizedTypeImpl) genericInterface, paramName2Type);
+                if (result != null) {
+                    return result;
+                } else {
+                    continue;
+                }
+            }
+
+            //找到对应的interfaceClass
+            List<Type> result = new ArrayList<>();
+            for (Type actualTypeArgument : parameterizedInterface.getActualTypeArguments()) {
+                if (actualTypeArgument instanceof TypeVariableImpl) {
+                    //父类中, 根据泛型参数名字获取对应的类型
+                    TypeVariableImpl<?> typeVariable = (TypeVariableImpl<?>) actualTypeArgument;
+                    String paramName = typeVariable.getName();
+                    if (paramName2Type.containsKey(paramName)) {
+                        result.add(paramName2Type.get(paramName));
+                    }
+                } else {
+                    result.add(actualTypeArgument);
+                }
+            }
+
+            return result;
+        }
+
+        return null;
+    }
+
+    /**
+     * 尝试从实现接口的父接口寻找目标接口的实际类型信息
+     *
+     * @param interfaceClass         目标接口
+     * @param parameterizedInterface 泛化接口实现类
+     * @param childParamName2Type    子类的泛型参数名字以及类型的对应关系缓存
+     * @return 实际类型信息, 如果null, 则表明没有寻找到目标接口, 否则, 即找到目标接口的实际类型信息
+     */
+    @Nullable
+    private static List<Type> tryGetActualTypesFromSuperInterfaces(Class<?> interfaceClass, ParameterizedTypeImpl parameterizedInterface, Map<String, Type> childParamName2Type) {
+        Class<?> rawInterface = parameterizedInterface.getRawType();
+        Type[] genericInterfaces = rawInterface.getGenericInterfaces();
+        if (CollectionUtils.isEmpty(genericInterfaces)) {
+            return null;
+        }
+
+        //缓存泛型参数名字以及类型的对应关系
+        Map<String, Type> paramName2Type = new HashMap<>();
+        Type[] actualTypeArguments = parameterizedInterface.getActualTypeArguments();
+        TypeVariable<? extends Class<?>>[] typeParameters = rawInterface.getTypeParameters();
+        for (int i = 0; i < typeParameters.length; i++) {
+            TypeVariable<? extends Class<?>> typeVariable = typeParameters[i];
+
+            if (actualTypeArguments[i] instanceof TypeVariableImpl) {
+                //只知道直接父类的泛型参数类型数据, 其父类或者实现接口的泛型类型是不知道的
+                //所以这里从子类的泛型参数名字以及类型的对应关系缓存中获取
+                paramName2Type.put(typeVariable.getName(), childParamName2Type.get(((TypeVariableImpl<?>) actualTypeArguments[i]).getName()));
+            } else {
+                //实际类型, 则直接关联
+                paramName2Type.put(typeVariable.getName(), actualTypeArguments[i]);
+            }
+        }
+
+        List<Type> result = getActualTypesFromInterfaces(interfaceClass, genericInterfaces, paramName2Type);
+        if (CollectionUtils.isNonEmpty(result)) {
+            return result;
+        } else {
+            return null;
+        }
     }
 
     /**
