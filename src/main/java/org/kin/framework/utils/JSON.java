@@ -27,9 +27,9 @@ public class JSON {
     static {
         PARSER.setTypeFactory(TypeFactory.defaultInstance());
         PARSER.findAndRegisterModules();
-        //不允许json中含有指定对象未包含的字段
+        //允许json中含有指定对象未包含的字段
         PARSER.disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES);
-        //不允许序列化空对象
+        //允许序列化空对象
         PARSER.disable(SerializationFeature.FAIL_ON_EMPTY_BEANS);
         //不序列化默认值, 0,false,[],{}等等, 减少json长度
         PARSER.setDefaultPropertyInclusion(JsonInclude.Include.NON_DEFAULT);
