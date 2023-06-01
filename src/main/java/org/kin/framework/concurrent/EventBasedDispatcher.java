@@ -35,7 +35,7 @@ public final class EventBasedDispatcher<KEY, MSG> extends AbstractDispatcher<KEY
     private volatile boolean isMessageLoopRunning;
 
     public EventBasedDispatcher(int parallelism) {
-        super(ExecutionContext.forkjoin(
+        super(ExecutionContext.forkJoin(
                 parallelism, "eventBasedDispatcher",
                 SysUtils.CPU_NUM / 2 + 1));
         this.parallelism = parallelism;

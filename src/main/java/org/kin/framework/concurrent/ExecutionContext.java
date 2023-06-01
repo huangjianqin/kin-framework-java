@@ -54,15 +54,15 @@ public class ExecutionContext implements ScheduledExecutorService {
     }
 
     //--------------------------------------------------------------------------------------------
-    public static ExecutionContext forkjoin(int parallelism, String workerNamePrefix) {
-        return forkjoin(parallelism, workerNamePrefix, 0);
+    public static ExecutionContext forkJoin(int parallelism, String workerNamePrefix) {
+        return forkJoin(parallelism, workerNamePrefix, 0);
     }
 
-    public static ExecutionContext forkjoin(int parallelism, String workerNamePrefix, int scheduleParallelism) {
-        return forkjoin(parallelism, workerNamePrefix, null, scheduleParallelism);
+    public static ExecutionContext forkJoin(int parallelism, String workerNamePrefix, int scheduleParallelism) {
+        return forkJoin(parallelism, workerNamePrefix, null, scheduleParallelism);
     }
 
-    public static ExecutionContext forkjoin(int parallelism, String workerNamePrefix, Thread.UncaughtExceptionHandler handler, int scheduleParallelism) {
+    public static ExecutionContext forkJoin(int parallelism, String workerNamePrefix, Thread.UncaughtExceptionHandler handler, int scheduleParallelism) {
         ForkJoinPool forkJoinPool = ThreadPoolUtils.forkJoinThreadPoolBuilder()
                 .poolName(workerNamePrefix)
                 .parallelism(parallelism)
@@ -76,15 +76,15 @@ public class ExecutionContext implements ScheduledExecutorService {
         }
     }
 
-    public static ExecutionContext asyncForkjoin(int parallelism, String workerNamePrefix) {
-        return asyncForkjoin(parallelism, workerNamePrefix, 0);
+    public static ExecutionContext asyncForkJoin(int parallelism, String workerNamePrefix) {
+        return asyncForkJoin(parallelism, workerNamePrefix, 0);
     }
 
-    public static ExecutionContext asyncForkjoin(int parallelism, String workerNamePrefix, int scheduleParallelism) {
-        return asyncForkjoin(parallelism, workerNamePrefix, null, scheduleParallelism);
+    public static ExecutionContext asyncForkJoin(int parallelism, String workerNamePrefix, int scheduleParallelism) {
+        return asyncForkJoin(parallelism, workerNamePrefix, null, scheduleParallelism);
     }
 
-    public static ExecutionContext asyncForkjoin(int parallelism, String workerNamePrefix, Thread.UncaughtExceptionHandler handler, int scheduleParallelism) {
+    public static ExecutionContext asyncForkJoin(int parallelism, String workerNamePrefix, Thread.UncaughtExceptionHandler handler, int scheduleParallelism) {
         ForkJoinPool forkJoinPool = ThreadPoolUtils.forkJoinThreadPoolBuilder()
                 .poolName(workerNamePrefix)
                 .parallelism(parallelism)
@@ -146,24 +146,44 @@ public class ExecutionContext implements ScheduledExecutorService {
         return fix(parallelism, workerNamePrefix, 0);
     }
 
+    public static ExecutionContext fix(int parallelism, int queue, String workerNamePrefix) {
+        return fix(parallelism, queue, workerNamePrefix, 0);
+    }
+
     public static ExecutionContext fix(int parallelism, ThreadFactory workerThreadFactory) {
         return fix(parallelism, workerThreadFactory, 0, null);
+    }
+
+    public static ExecutionContext fix(int parallelism, int queue, ThreadFactory workerThreadFactory) {
+        return fix(parallelism, queue, workerThreadFactory, 0, null);
     }
 
     public static ExecutionContext fix(int parallelism, String workerNamePrefix, int scheduleParallelism) {
         return fix(parallelism, workerNamePrefix, scheduleParallelism, workerNamePrefix.concat(DEFAULT_SCHEDULER_NAME));
     }
 
+    public static ExecutionContext fix(int parallelism, int queue, String workerNamePrefix, int scheduleParallelism) {
+        return fix(parallelism, queue, workerNamePrefix, scheduleParallelism, workerNamePrefix.concat(DEFAULT_SCHEDULER_NAME));
+    }
+
     public static ExecutionContext fix(int parallelism, String workerNamePrefix, int scheduleParallelism, String schedulerNamePrefix) {
         return fix(parallelism, new SimpleThreadFactory(workerNamePrefix), scheduleParallelism, new SimpleThreadFactory(schedulerNamePrefix));
     }
 
+    public static ExecutionContext fix(int parallelism, int queue, String workerNamePrefix, int scheduleParallelism, String schedulerNamePrefix) {
+        return fix(parallelism, queue, new SimpleThreadFactory(workerNamePrefix), scheduleParallelism, new SimpleThreadFactory(schedulerNamePrefix));
+    }
+
     public static ExecutionContext fix(int parallelism, ThreadFactory workerThreadFactory, int scheduleParallelism, ThreadFactory schedulerFactory) {
+        return fix(parallelism, Integer.MAX_VALUE, workerThreadFactory, scheduleParallelism, schedulerFactory);
+    }
+
+    public static ExecutionContext fix(int parallelism, int queue, ThreadFactory workerThreadFactory, int scheduleParallelism, ThreadFactory schedulerFactory) {
         ThreadPoolExecutor threadPoolExecutor = ThreadPoolUtils.threadPoolBuilder()
                 .coreThreads(parallelism)
                 .maximumThreads(parallelism)
                 .keepAlive(60L, TimeUnit.SECONDS)
-                .workQueue(new MemorySafeLinkedBlockingQueue<>())
+                .workQueue(queue)
                 .threadFactory(workerThreadFactory)
                 .common();
         if (scheduleParallelism > 0) {
@@ -177,8 +197,16 @@ public class ExecutionContext implements ScheduledExecutorService {
         return elastic(coreParallelism, maxParallelism, workerNamePrefix, 0);
     }
 
+    public static ExecutionContext elastic(int coreParallelism, int maxParallelism, int queue, String workerNamePrefix) {
+        return elastic(coreParallelism, maxParallelism, queue, workerNamePrefix, 0);
+    }
+
     public static ExecutionContext elastic(int coreParallelism, int maxParallelism, ThreadFactory workerThreadFactory) {
         return elastic(coreParallelism, maxParallelism, workerThreadFactory, 0, null);
+    }
+
+    public static ExecutionContext elastic(int coreParallelism, int maxParallelism, int queue, ThreadFactory workerThreadFactory) {
+        return elastic(coreParallelism, maxParallelism, queue, workerThreadFactory, 0, null);
     }
 
     /**
@@ -191,13 +219,27 @@ public class ExecutionContext implements ScheduledExecutorService {
     /**
      * 有界扩容的线程池, 允许线程数扩容到一定程度(比如, 10倍CPU核心数), 如果超过这个能力, 则buffer
      */
+    public static ExecutionContext elastic(int coreParallelism, int maxParallelism, int queue, String workerNamePrefix, int scheduleParallelism) {
+        return elastic(coreParallelism, maxParallelism, queue, new SimpleThreadFactory(workerNamePrefix), scheduleParallelism, new SimpleThreadFactory(workerNamePrefix.concat(DEFAULT_SCHEDULER_NAME)));
+    }
+
+    /**
+     * 有界扩容的线程池, 允许线程数扩容到一定程度(比如, 10倍CPU核心数), 如果超过这个能力, 则buffer
+     */
     public static ExecutionContext elastic(int coreParallelism, int maxParallelism, ThreadFactory workerThreadFactory, int scheduleParallelism, ThreadFactory schedulerFactory) {
+        return elastic(coreParallelism, maxParallelism, 0, workerThreadFactory, scheduleParallelism, schedulerFactory);
+    }
+
+    /**
+     * 有界扩容的线程池, 允许线程数扩容到一定程度(比如, 10倍CPU核心数), 如果超过这个能力, 则buffer
+     */
+    public static ExecutionContext elastic(int coreParallelism, int maxParallelism, int queue, ThreadFactory workerThreadFactory, int scheduleParallelism, ThreadFactory schedulerFactory) {
         EagerThreadPoolExecutor eagerThreadPoolExecutor = ThreadPoolUtils.threadPoolBuilder()
                 .coreThreads(coreParallelism)
                 .maximumThreads(maxParallelism)
                 .keepAlive(60L, TimeUnit.SECONDS)
                 .threadFactory(workerThreadFactory)
-                .eager();
+                .eager(queue);
         if (scheduleParallelism > 0) {
             return new ExecutionContext(eagerThreadPoolExecutor, scheduleParallelism, schedulerFactory);
         } else {

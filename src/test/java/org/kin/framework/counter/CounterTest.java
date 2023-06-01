@@ -17,7 +17,7 @@ public class CounterTest {
         int parallelism = 10;
         long sum = 1000000;
         CountDownLatch latch = new CountDownLatch(parallelism);
-        ExecutionContext worker = ExecutionContext.forkjoin(parallelism, "worker");
+        ExecutionContext worker = ExecutionContext.forkJoin(parallelism, "worker");
         for (int i = 0; i < parallelism; i++) {
             worker.execute(() -> {
                 for (long l = 0; l < sum / parallelism; l++) {
