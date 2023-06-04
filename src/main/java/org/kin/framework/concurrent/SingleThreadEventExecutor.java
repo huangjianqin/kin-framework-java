@@ -4,8 +4,9 @@ import com.google.common.base.Preconditions;
 import org.kin.framework.collection.DefaultPriorityQueue;
 import org.kin.framework.collection.PriorityQueue;
 import org.kin.framework.collection.PriorityQueueNode;
-import org.kin.framework.log.LoggerOprs;
 import org.kin.framework.utils.CollectionUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import javax.annotation.Nonnull;
 import java.util.*;
@@ -22,7 +23,9 @@ import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
  * @author huangjianqin
  * @date 2020/11/23
  */
-public class SingleThreadEventExecutor implements EventExecutor, LoggerOprs {
+public class SingleThreadEventExecutor implements EventExecutor {
+    private static final Logger log = LoggerFactory.getLogger(SingleThreadEventExecutor.class);
+
     //状态枚举
     /** not start */
     private static final byte ST_NOT_STARTED = 1;
@@ -778,7 +781,7 @@ public class SingleThreadEventExecutor implements EventExecutor, LoggerOprs {
                         if (e instanceof InterruptedException) {
                             break;
                         }
-                        error("Unexpected exception from an runned Task: ", e);
+                        log.error("Unexpected exception from an running Task: ", e);
                     }
                 }
             } catch (Throwable t) {
