@@ -1,8 +1,15 @@
 package org.kin.framework.utils;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.io.*;
 import java.net.*;
+import java.security.AccessController;
+import java.security.PrivilegedAction;
+import java.util.ArrayList;
 import java.util.Enumeration;
+import java.util.List;
 import java.util.regex.Pattern;
 
 /**
@@ -10,11 +17,44 @@ import java.util.regex.Pattern;
  * @date 2018/1/28
  */
 public class NetUtils {
-    private static final String ANY_HOST = "0.0.0.0";
-    private static final String LOCALHOST = "127.0.0.1";
+    private static final Logger log = LoggerFactory.getLogger(NetUtils.class);
+
+    /** 全开放ip */
+    public static final String ANY = "0.0.0.0";
+    /** localhost ip */
+    public static final String LOCALHOST_IP = "127.0.0.1";
+    /** localhost name */
+    public static final String LOCALHOST_NAME = "localhost";
+    /** ip地址正则匹配 */
     private static final Pattern IP_PATTERN = Pattern.compile("\\d{1,3}(\\.\\d{1,3}){3,5}:\\d{1,5}$");
 
-    private static volatile InetAddress LOCAL_ADDRESS = null;
+    /** 本地address, 非localhost */
+    public static final InetAddress LOCAL_ADDRESS = getLocalAddress0();
+    /**
+     * The {@link Inet4Address} that represents the IPv4 loopback address '127.0.0.1'
+     */
+    public static final Inet4Address LOCALHOST4 = createLocalhost4();
+
+    /**
+     * The {@link Inet6Address} that represents the IPv6 loopback address '::1'
+     */
+    public static final Inet6Address LOCALHOST6 = createLocalhost6();
+
+    /**
+     * The loopback {@link NetworkInterface} of the current machine
+     */
+    public static final NetworkInterface LOOPBACK_IF;
+    /**
+     * The {@link InetAddress} that represents the loopback address. If IPv6 stack is available, it will refer to
+     * {@link #LOCALHOST6}.  Otherwise, {@link #LOCALHOST4}.
+     */
+    public static final InetAddress LOCALHOST;
+
+    static {
+        NetworkIfaceAndInetAddress loopback = determineLoopback(LOCALHOST4, LOCALHOST6);
+        LOOPBACK_IF = loopback.iface();
+        LOCALHOST = loopback.address();
+    }
 
     // -------------------------------------------------------------------- valid ------------------------------------------------------
 
@@ -27,9 +67,10 @@ public class NetUtils {
         }
         String name = address.getHostAddress();
         return (name != null
-                && !ANY_HOST.equals(name)
-                && !LOCALHOST.equals(name)
-                && IP_PATTERN.matcher(name).matches());
+                && !ANY.equals(name)
+                && !LOCALHOST_IP.equals(name)
+                && !LOCALHOST_NAME.equals(name)
+                && checkHostPort(name));
     }
 
     /**
@@ -127,9 +168,154 @@ public class NetUtils {
         return localAddress;
     }
 
+    /**
+     * 创建ipv4 localhost地址
+     *
+     * @return ipv4 localhost地址
+     */
+    private static Inet4Address createLocalhost4() {
+        byte[] localhost4Bytes = {127, 0, 0, 1};
+
+        Inet4Address localhost4 = null;
+        try {
+            localhost4 = (Inet4Address) InetAddress.getByAddress("localhost", localhost4Bytes);
+        } catch (Exception e) {
+            // We should not get here as long as the length of the address is correct.
+            ExceptionUtils.throwExt(e);
+        }
+
+        return localhost4;
+    }
+
+    /**
+     * 创建ipv6 localhost地址
+     *
+     * @return ipv6 localhost地址
+     */
+    private static Inet6Address createLocalhost6() {
+        byte[] localhost6Bytes = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1};
+
+        Inet6Address localhost6 = null;
+        try {
+            localhost6 = (Inet6Address) InetAddress.getByAddress("localhost", localhost6Bytes);
+        } catch (Exception e) {
+            // We should not get here as long as the length of the address is correct.
+            ExceptionUtils.throwExt(e);
+        }
+
+        return localhost6;
+    }
+
+    /**
+     * copy from io.netty.util.NetUtilInitializations
+     */
+    private static NetworkIfaceAndInetAddress determineLoopback(Inet4Address localhost4, Inet6Address localhost6) {
+        // Retrieve the list of available network interfaces.
+        List<NetworkInterface> ifaces = new ArrayList<>();
+        try {
+            Enumeration<NetworkInterface> interfaces = NetworkInterface.getNetworkInterfaces();
+            if (interfaces != null) {
+                while (interfaces.hasMoreElements()) {
+                    NetworkInterface iface = interfaces.nextElement();
+                    // Use the interface with proper INET addresses only.
+                    if (addressesFromNetworkInterface(iface).hasMoreElements()) {
+                        ifaces.add(iface);
+                    }
+                }
+            }
+        } catch (SocketException e) {
+            log.warn("failed to retrieve the list of available network interfaces", e);
+        }
+
+        // Find the first loopback interface available from its INET address (127.0.0.1 or ::1)
+        // Note that we do not use NetworkInterface.isLoopback() in the first place because it takes long time
+        // on a certain environment. (e.g. Windows with -Djava.net.preferIPv4Stack=true)
+        NetworkInterface loopbackIface = null;
+        InetAddress loopbackAddr = null;
+        loop:
+        for (NetworkInterface iface : ifaces) {
+            for (Enumeration<InetAddress> i = addressesFromNetworkInterface(iface); i.hasMoreElements(); ) {
+                InetAddress addr = i.nextElement();
+                if (addr.isLoopbackAddress()) {
+                    // Found
+                    loopbackIface = iface;
+                    loopbackAddr = addr;
+                    break loop;
+                }
+            }
+        }
+
+        // If failed to find the loopback interface from its INET address, fall back to isLoopback().
+        if (loopbackIface == null) {
+            try {
+                for (NetworkInterface iface : ifaces) {
+                    if (iface.isLoopback()) {
+                        Enumeration<InetAddress> i = addressesFromNetworkInterface(iface);
+                        if (i.hasMoreElements()) {
+                            // Found the one with INET address.
+                            loopbackIface = iface;
+                            loopbackAddr = i.nextElement();
+                            break;
+                        }
+                    }
+                }
+
+                if (loopbackIface == null) {
+                    log.warn("failed to find the loopback interface");
+                }
+            } catch (SocketException e) {
+                log.warn("failed to find the loopback interface", e);
+            }
+        }
+
+        if (loopbackIface != null) {
+            // Found the loopback interface with an INET address.
+            log.debug(
+                    "loopback interface: {} ({}, {})",
+                    loopbackIface.getName(), loopbackIface.getDisplayName(), loopbackAddr.getHostAddress());
+        } else {
+            // Could not find the loopback interface, but we can't leave LOCALHOST as null.
+            // Use LOCALHOST6 or LOCALHOST4, preferably the IPv6 one.
+            if (loopbackAddr == null) {
+                try {
+                    if (NetworkInterface.getByInetAddress(localhost6) != null) {
+                        log.debug("using hard-coded IPv6 localhost address: {}", localhost6);
+                        loopbackAddr = localhost6;
+                    }
+                } catch (Exception e) {
+                    // Ignore
+                } finally {
+                    if (loopbackAddr == null) {
+                        log.debug("using hard-coded IPv4 localhost address: {}", localhost4);
+                        loopbackAddr = localhost4;
+                    }
+                }
+            }
+        }
+
+        return new NetworkIfaceAndInetAddress(loopbackIface, loopbackAddr);
+    }
+
+    private static Enumeration<InetAddress> addressesFromNetworkInterface(final NetworkInterface intf) {
+        Enumeration<InetAddress> addresses =
+                AccessController.doPrivileged((PrivilegedAction<Enumeration<InetAddress>>) intf::getInetAddresses);
+        // Android seems to sometimes return null even if this is not a valid return value by the api docs.
+        // Just return an empty Enumeration in this case.
+        // See https://github.com/netty/netty/issues/10045
+        if (addresses == null) {
+            return CollectionUtils.emptyEnumeration();
+        }
+        return addresses;
+    }
 
     // ---------------------- tool ----------------------
 
+    /**
+     * 检查是否合法ip
+     *
+     * @param address ip地址
+     * @return true表示合法的ip地址
+     */
     public static boolean checkHostPort(String address) {
         return address.matches(IP_PATTERN.pattern());
     }
@@ -140,21 +326,16 @@ public class NetUtils {
      * @return first valid local IP
      */
     public static InetAddress getLocalAddress() {
-        if (LOCAL_ADDRESS != null) {
-            return LOCAL_ADDRESS;
-        }
-        InetAddress localAddress = getLocalAddress0();
-        LOCAL_ADDRESS = localAddress;
-        return localAddress;
+        return LOCAL_ADDRESS;
     }
 
     /**
-     * get ip address
+     * 获取local host address
      *
-     * @return String
+     * @return local host address
      */
-    public static String getIp() {
-        return getLocalAddress().getHostAddress();
+    public static InetAddress getLocalhost() {
+        return LOCALHOST;
     }
 
     /**
@@ -162,7 +343,7 @@ public class NetUtils {
      * @return String ip:port
      */
     public static String getIpPort(int port) {
-        String ip = getIp();
+        String ip = getLocalhost().getHostAddress();
         return getIpPort(ip, port);
     }
 
@@ -204,9 +385,10 @@ public class NetUtils {
 
     /**
      * 检查端口是否被占用
+     * @return true表示没有被占用
      */
     public static boolean isValidPort(int port) {
-        return isValidPort(getIp(), port);
+        return isValidPort(getLocalhost().getHostAddress(), port);
     }
 
     /**
@@ -217,21 +399,11 @@ public class NetUtils {
             return false;
         }
 
-        Socket socket = null;
-        try {
-            socket = new Socket();
+        try (Socket socket = new Socket()) {
             socket.bind(new InetSocketAddress(host, port));
             return true;
         } catch (IOException ignored) {
-
-        } finally {
-            if (socket != null) {
-                try {
-                    socket.close();
-                } catch (IOException e) {
-
-                }
-            }
+            //do nothing
         }
 
         return false;
@@ -313,5 +485,24 @@ public class NetUtils {
      */
     public static long ipHashCode(String ip, int port) {
         return ipHashCode(ip) + port;
+    }
+
+    //---------------------------------------------------------------------------------------------------------
+    static final class NetworkIfaceAndInetAddress {
+        private final NetworkInterface iface;
+        private final InetAddress address;
+
+        NetworkIfaceAndInetAddress(NetworkInterface iface, InetAddress address) {
+            this.iface = iface;
+            this.address = address;
+        }
+
+        public NetworkInterface iface() {
+            return iface;
+        }
+
+        public InetAddress address() {
+            return address;
+        }
     }
 }

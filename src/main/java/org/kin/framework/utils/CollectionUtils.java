@@ -1,15 +1,15 @@
 package org.kin.framework.utils;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 /**
  * @author huangjianqin
  * @date 2019/7/6
  */
 public class CollectionUtils {
+    /** empty {@link Enumeration}实现 */
+    private static final Enumeration<Object> EMPTY_ENUMERATION = Collections.enumeration(Collections.emptyList());
+
     public static <E> boolean isEmpty(Collection<E> collection) {
         return collection == null || collection.isEmpty();
     }
@@ -35,15 +35,21 @@ public class CollectionUtils {
     }
 
     public static <ITEM> List<ITEM> toList(ITEM[] array) {
-        List<ITEM> list = new ArrayList<>();
-        for (ITEM item : array) {
-            list.add(item);
-        }
-        return list;
+        return Arrays.asList(array);
     }
 
     /** 判断两集合是否一致 */
     public static <T> boolean isSame(Collection<T> source, Collection<T> other) {
         return source.size() == other.size() && source.containsAll(other) && other.containsAll(source);
+    }
+
+    /**
+     * 返回empty {@link Enumeration}实现
+     *
+     * @return empty {@link Enumeration}实现
+     */
+    @SuppressWarnings("unchecked")
+    public static <T> Enumeration<T> emptyEnumeration() {
+        return (Enumeration<T>) EMPTY_ENUMERATION;
     }
 }
