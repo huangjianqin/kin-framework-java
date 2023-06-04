@@ -339,11 +339,29 @@ public class NetUtils {
     }
 
     /**
+     * 返回local address ip address
+     *
+     * @return local address ip address
+     */
+    public static String getLocalAddressIp() {
+        return getLocalAddress().getHostAddress();
+    }
+
+    /**
+     * 返回localhost address ip address
+     *
+     * @return localhost address ip address
+     */
+    public static String getLocalhostIp() {
+        return getLocalhost().getHostAddress();
+    }
+
+    /**
      * @param port 端口号
      * @return String ip:port
      */
     public static String getIpPort(int port) {
-        String ip = getLocalhost().getHostAddress();
+        String ip = getLocalhostIp();
         return getIpPort(ip, port);
     }
 
@@ -388,7 +406,7 @@ public class NetUtils {
      * @return true表示没有被占用
      */
     public static boolean isValidPort(int port) {
-        return isValidPort(getLocalhost().getHostAddress(), port);
+        return isValidPort(getLocalhostIp(), port);
     }
 
     /**
