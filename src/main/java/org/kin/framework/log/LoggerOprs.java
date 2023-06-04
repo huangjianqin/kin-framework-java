@@ -23,81 +23,157 @@ public interface LoggerOprs {
 
     //-------------------------------------------trace-------------------------------------------
     default void trace(String msg) {
-        log().trace(msg);
+        Logger log = log();
+        if (!log.isTraceEnabled()) {
+            return;
+        }
+        log.trace(msg);
     }
 
     default void trace(String msg, Object arg1) {
-        log().trace(msg, arg1);
+        Logger log = log();
+        if (!log.isTraceEnabled()) {
+            return;
+        }
+        log.trace(msg, arg1);
     }
 
     default void trace(String msg, Object arg1, Object arg2) {
-        log().trace(msg, arg1, arg2);
+        Logger log = log();
+        if (!log.isTraceEnabled()) {
+            return;
+        }
+        log.trace(msg, arg1, arg2);
     }
 
     default void trace(String format, Object... args) {
-        log().trace(format, args);
+        Logger log = log();
+        if (!log.isTraceEnabled()) {
+            return;
+        }
+        log.trace(format, args);
     }
 
     default void trace(Marker marker, String format, Object... args) {
-        log().trace(marker, format, args);
+        Logger log = log();
+        if (!log.isTraceEnabled()) {
+            return;
+        }
+        log.trace(marker, format, args);
     }
 
     default void trace(String msg, Throwable t) {
-        log().trace(msg, t);
+        Logger log = log();
+        if (!log.isTraceEnabled()) {
+            return;
+        }
+        log.trace(msg, t);
     }
 
     //-------------------------------------------debug-------------------------------------------
     default void debug(String msg) {
-        log().debug(msg);
+        Logger log = log();
+        if (!log.isDebugEnabled()) {
+            return;
+        }
+        log.debug(msg);
     }
 
     default void debug(String msg, Object arg1) {
-        log().debug(msg, arg1);
+        Logger log = log();
+        if (!log.isDebugEnabled()) {
+            return;
+        }
+        log.debug(msg, arg1);
     }
 
     default void debug(String msg, Object arg1, Object arg2) {
-        log().debug(msg, arg1, arg2);
+        Logger log = log();
+        if (!log.isDebugEnabled()) {
+            return;
+        }
+        log.debug(msg, arg1, arg2);
     }
 
     default void debug(String format, Object... args) {
-        log().debug(format, args);
+        Logger log = log();
+        if (!log.isDebugEnabled()) {
+            return;
+        }
+        log.debug(format, args);
     }
 
     default void debug(Marker marker, String format, Object... args) {
-        log().debug(marker, format, args);
+        Logger log = log();
+        if (!log.isDebugEnabled()) {
+            return;
+        }
+        log.debug(marker, format, args);
     }
 
     default void debug(String msg, Throwable t) {
-        log().debug(msg, t);
+        Logger log = log();
+        if (!log.isDebugEnabled()) {
+            return;
+        }
+        log.debug(msg, t);
     }
 
     default void debug(Throwable t) {
-        log().debug("", t);
+        Logger log = log();
+        if (!log.isDebugEnabled()) {
+            return;
+        }
+        log.debug("", t);
     }
 
     //-------------------------------------------info-------------------------------------------
     default void info(String msg) {
-        log().info(msg);
+        Logger log = log();
+        if (!log.isInfoEnabled()) {
+            return;
+        }
+        log.info(msg);
     }
 
     default void info(String msg, Object arg1) {
-        log().info(msg, arg1);
+        Logger log = log();
+        if (!log.isInfoEnabled()) {
+            return;
+        }
+        log.info(msg, arg1);
     }
 
     default void info(String msg, Object arg1, Object arg2) {
-        log().info(msg, arg1, arg2);
+        Logger log = log();
+        if (!log.isInfoEnabled()) {
+            return;
+        }
+        log.info(msg, arg1, arg2);
     }
 
     default void info(String format, Object... args) {
-        log().info(format, args);
+        Logger log = log();
+        if (!log.isInfoEnabled()) {
+            return;
+        }
+        log.info(format, args);
     }
 
     default void info(Marker marker, String format, Object... args) {
-        log().info(marker, format, args);
+        Logger log = log();
+        if (!log.isInfoEnabled()) {
+            return;
+        }
+        log.info(marker, format, args);
     }
 
     default void info(String msg, Throwable t) {
-        log().info(msg, t);
+        Logger log = log();
+        if (!log.isInfoEnabled()) {
+            return;
+        }
+        log.info(msg, t);
     }
 
     //-------------------------------------------warn-------------------------------------------
