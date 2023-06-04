@@ -357,6 +357,24 @@ public class NetUtils {
     }
 
     /**
+     * 返回local address ip name
+     *
+     * @return local address ip name
+     */
+    public static String getLocalAddressName() {
+        return getLocalAddress().getHostName();
+    }
+
+    /**
+     * 返回localhost address ip name
+     *
+     * @return localhost address ip name
+     */
+    public static String getLocalhostName() {
+        return getLocalhost().getHostName();
+    }
+
+    /**
      * @param port 端口号
      * @return String ip:port
      */
