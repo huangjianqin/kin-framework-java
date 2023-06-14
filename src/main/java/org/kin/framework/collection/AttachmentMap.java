@@ -58,15 +58,15 @@ public class AttachmentMap {
         return (T) attachments.put(key, obj);
     }
 
-//    /**
-//     * 是否存在attachment key
-//     *
-//     * @param key attachment key
-//     * @return true表示存在attachment key
-//     */
-//    public boolean contains(String key) {
-//        return attachments.containsKey(key);
-//    }
+    /**
+     * 是否存在attachment key
+     *
+     * @param key attachment key
+     * @return true表示存在attachment key
+     */
+    public boolean hasAttachment(String key) {
+        return attachments.containsKey(key);
+    }
 
     /**
      * 获取attachment value
