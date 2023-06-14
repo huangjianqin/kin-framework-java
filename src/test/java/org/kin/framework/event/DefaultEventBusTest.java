@@ -1,6 +1,7 @@
 package org.kin.framework.event;
 
 import org.kin.framework.common.Ordered;
+import org.kin.framework.utils.SysUtils;
 
 import java.util.List;
 
@@ -10,7 +11,7 @@ import java.util.List;
 @EventListener
 public class DefaultEventBusTest {
     public static void main(String[] args) throws InterruptedException {
-        DefaultEventBus eventBus = new DefaultEventBus();
+        DefaultEventBus eventBus = DefaultEventBus.create(SysUtils.CPU_NUM, 2);
         eventBus.register(new DefaultEventBusTest());
         eventBus.register(new FirstEventHandler());
 
@@ -47,12 +48,12 @@ public class DefaultEventBusTest {
     @EventMerge(window = 1000)
     @EventFunction
     public void handleThirdEvent1(List<ThirdEvent> events) {
-        System.out.println(System.currentTimeMillis() + ": handleThirdEvent1 >>> handle " + events);
+        System.out.println(System.currentTimeMillis() + ": handle merged ThirdEvent1 >>> handle " + events);
     }
 
     @EventMerge(type = MergeType.DEBOUNCE, window = 1000, maxSize = 3)
     @EventFunction
     public void handleThirdEvent2(List<ThirdEvent> events) {
-        System.out.println(System.currentTimeMillis() + ": handleThirdEvent2 >>> handle " + events);
+        System.out.println(System.currentTimeMillis() + ": handle merged ThirdEvent2 >>> handle " + events);
     }
 }

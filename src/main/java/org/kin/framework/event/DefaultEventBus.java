@@ -32,19 +32,37 @@ import java.util.concurrent.TimeUnit;
 @SuppressWarnings({"rawtypes", "unchecked"})
 public final class DefaultEventBus implements EventBus {
     private static final Logger log = LoggerFactory.getLogger(DefaultEventBus.class);
+    /** 默认worker name */
+    private static final String DEFAULT_WORKER_NAME = "defaultEventBus";
 
     /** key -> event class, value -> event handler */
     private final Map<Class<?>, EventHandler<?>> event2Handler = new NonBlockingHashMap<>();
     /** 调度线程 */
     private final ExecutionContext scheduler;
-
+    /** event bus是否已stopped */
     private volatile boolean stopped;
 
-    public DefaultEventBus() {
-        this(ExecutionContext.fix(SysUtils.CPU_NUM, "defaultEventBus", 2));
+    public static DefaultEventBus create() {
+        return create(SysUtils.CPU_NUM);
     }
 
-    public DefaultEventBus(ExecutionContext scheduler) {
+    public static DefaultEventBus create(int parallelism) {
+        return create(parallelism, DEFAULT_WORKER_NAME);
+    }
+
+    public static DefaultEventBus create(int parallelism, String workerName) {
+        return create(parallelism, 0, workerName);
+    }
+
+    public static DefaultEventBus create(int parallelism, int scheduleParallelism) {
+        return create(parallelism, scheduleParallelism, DEFAULT_WORKER_NAME);
+    }
+
+    public static DefaultEventBus create(int parallelism, int scheduleParallelism, String workerName) {
+        return new DefaultEventBus(ExecutionContext.fix(parallelism, workerName, scheduleParallelism));
+    }
+
+    private DefaultEventBus(ExecutionContext scheduler) {
         this.scheduler = scheduler;
     }
 
@@ -74,6 +92,15 @@ public final class DefaultEventBus implements EventBus {
     }
 
     /**
+     * 检查是否支持事件合并, 即需要event bus支持调度
+     */
+    private void checkSupportEventMerge() {
+        if (!scheduler.withScheduler()) {
+            throw new UnsupportedOperationException("does not support event merge, due to internal scheduler does not support schedule");
+        }
+    }
+
+    /**
      * 注册{@link EventHandler}, 该handler可能支持事件合并
      */
     private void registerEventHandler(Class<?> eventType, EventHandler eventHandler, EventMerge eventMerge) {
@@ -82,6 +109,7 @@ public final class DefaultEventBus implements EventBus {
             registerEventHandler(eventType, eventHandler);
         } else {
             //支持事件合并
+            checkSupportEventMerge();
             registerEventHandler(eventType, new MergedEventHandler(eventHandler, eventMerge, this));
         }
     }
@@ -146,6 +174,7 @@ public final class DefaultEventBus implements EventBus {
                 }
             } else {
                 //支持事件合并, (EventBus,Collection<Event>)
+                checkSupportEventMerge();
                 for (int i = 1; i <= parameterTypes.length; i++) {
                     if (parameterTypes[i - 1] instanceof ParameterizedType) {
                         //泛型类型
@@ -223,11 +252,21 @@ public final class DefaultEventBus implements EventBus {
         doPost(event.getClass(), event);
     }
 
+    /**
+     * 检查是否支持事件调度
+     */
+    private void checkSupportSchedule() {
+        if (!scheduler.withScheduler()) {
+            throw new UnsupportedOperationException("does not support schedule, due to internal scheduler does not support schedule");
+        }
+    }
+
     @Override
     public Future<?> schedule(Object event, long delay, TimeUnit unit) {
         if (isStopped()) {
             throw new IllegalStateException("event bus is stopped");
         }
+        checkSupportSchedule();
         return scheduler.schedule(() -> post(event), delay, unit);
 
     }
@@ -237,6 +276,7 @@ public final class DefaultEventBus implements EventBus {
         if (isStopped()) {
             throw new IllegalStateException("event bus is stopped");
         }
+        checkSupportSchedule();
         return scheduler.scheduleAtFixedRate(() -> post(event), initialDelay, period, unit);
 
     }
@@ -246,6 +286,7 @@ public final class DefaultEventBus implements EventBus {
         if (isStopped()) {
             throw new IllegalStateException("event bus is stopped");
         }
+        checkSupportSchedule();
         return scheduler.scheduleWithFixedDelay(() -> post(event), initialDelay, delay, unit);
 
     }

@@ -36,7 +36,7 @@ public abstract class AbstractDispatcher<KEY, MSG> implements Dispatcher<KEY, MS
             throw new IllegalArgumentException("message is null");
         }
 
-        if (executionContext.withSchedule()) {
+        if (executionContext.withScheduler()) {
             executionContext.schedule(() -> postMessage(key, message), delay, unit);
         } else {
             throw new UnsupportedOperationException("execution context doesn't support scheduled");
@@ -57,7 +57,7 @@ public abstract class AbstractDispatcher<KEY, MSG> implements Dispatcher<KEY, MS
             throw new IllegalArgumentException("message is null");
         }
 
-        if (executionContext.withSchedule()) {
+        if (executionContext.withScheduler()) {
             executionContext.scheduleAtFixedRate(() -> postMessage(key, message), initialDelay, period, unit);
         } else {
             throw new UnsupportedOperationException("execution context doesn't support scheduled");
@@ -78,7 +78,7 @@ public abstract class AbstractDispatcher<KEY, MSG> implements Dispatcher<KEY, MS
             throw new IllegalArgumentException("message is null");
         }
 
-        if (executionContext.withSchedule()) {
+        if (executionContext.withScheduler()) {
             executionContext.scheduleWithFixedDelay(() -> postMessage(key, message), initialDelay, delay, unit);
         } else {
             throw new UnsupportedOperationException("execution context doesn't support scheduled");

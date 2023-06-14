@@ -28,7 +28,7 @@ public final class FixOrderedEventLoopGroup<P extends OrderedEventLoop<P>> imple
     }
 
     public FixOrderedEventLoopGroup(int executorSize, ExecutionContext ec, OrderedEventLoopBuilder<P> builder) {
-        Preconditions.checkArgument(ec.withSchedule(), "execution context must be with scheduler");
+        Preconditions.checkArgument(ec.withScheduler(), "execution context must be with scheduler");
         this.executionContext = ec;
         List<P> executors = new ArrayList<>(executorSize);
         for (int i = 0; i < executorSize; i++) {

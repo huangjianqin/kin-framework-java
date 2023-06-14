@@ -50,7 +50,7 @@ public class CachedOrderedEventLoopGroup<P extends OrderedEventLoop<P>> implemen
     }
 
     public CachedOrderedEventLoopGroup(ExecutionContext ec, OrderedEventLoopBuilder<P> builder) {
-        Preconditions.checkArgument(ec.withSchedule(), "execution context must be with scheduler");
+        Preconditions.checkArgument(ec.withScheduler(), "execution context must be with scheduler");
         this.executionContext = ec;
         this.builder = builder;
     }

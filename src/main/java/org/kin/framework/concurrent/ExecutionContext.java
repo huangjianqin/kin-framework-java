@@ -409,7 +409,7 @@ public class ExecutionContext implements ScheduledExecutorService {
     /**
      * 是否包含调度线程
      */
-    public boolean withSchedule() {
+    public boolean withScheduler() {
         return Objects.nonNull(scheduler) && !scheduler.isShutdown();
     }
 }
