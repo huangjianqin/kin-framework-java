@@ -11,6 +11,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 /**
  * 常量池
  *
+ * Forked from <a href="https://github.com/netty/netty">Netty</a>.
  * @author huangjianqin
  * @date 2023/6/14
  */
@@ -45,7 +46,7 @@ public abstract class ConstantPool<T extends Constant<T>> {
     }
 
     /**
-     * 获取名为'[class name]#[custom name]'的{@link Constant}实例, 如果没有, 则创建一个
+     * 返回名为'[class name]#[custom name]'的{@link Constant}实例, 如果没有, 则创建一个
      * @param firstNameComponent    class name
      * @param secondNameComponent   custom name
      * @return  {@link Constant}实例
@@ -58,7 +59,7 @@ public abstract class ConstantPool<T extends Constant<T>> {
     }
 
     /**
-     * 获取名为{@code name}的{@link Constant}实例, 如果没有, 则创建一个
+     * 返回名为{@code name}的{@link Constant}实例, 如果没有, 则创建一个
      *
      * @param name 常量名
      * @return {@link Constant}实例
@@ -68,7 +69,7 @@ public abstract class ConstantPool<T extends Constant<T>> {
     }
 
     /**
-     * 获取名为{@code name}的{@link Constant}实例, 如果没有, 则创建一个
+     * 返回名为{@code name}的{@link Constant}实例, 如果没有, 则创建一个
      *
      * @param name 常量名
      * @return {@link Constant}实例

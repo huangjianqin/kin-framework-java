@@ -6,7 +6,7 @@ package org.kin.framework.common;
  * 作为map key时, 还可以通过{@link #id()}进行快速equal操作
  * 由{@link ConstantPool}管理
  *
- * 参考netty
+ * Forked from <a href="https://github.com/netty/netty">Netty</a>.
  * @author huangjianqin
  * @date 2023/6/14
  */
