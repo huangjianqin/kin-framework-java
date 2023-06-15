@@ -1,5 +1,7 @@
 package org.kin.framework.utils;
 
+import java.lang.management.ManagementFactory;
+import java.lang.management.RuntimeMXBean;
 import java.security.AccessController;
 import java.security.PrivilegedAction;
 import java.util.regex.Pattern;
@@ -13,6 +15,8 @@ public class SysUtils {
     public static final int CPU_NUM = Runtime.getRuntime().availableProcessors();
     /** 双倍cpu */
     public static final int DOUBLE_CPU = CPU_NUM * 2;
+    /** app进程id */
+    private static int PID = -1;
 
     private static final Pattern INTEGER_PATTERN = Pattern.compile("-?[0-9]+");
 
@@ -210,5 +214,22 @@ public class SysUtils {
     public static boolean isWindows() {
         String osName = getOsName();
         return StringUtils.isNotBlank(osName) && osName.toLowerCase().startsWith("win");
+    }
+
+    /**
+     * 获取当前应用进程id
+     * @return  应用进程id
+     */
+    public static int getPid() {
+        if (PID < 0) {
+            try {
+                RuntimeMXBean runtime = ManagementFactory.getRuntimeMXBean();
+                String name = runtime.getName(); // format: "pid@hostname"
+                PID = Integer.parseInt(name.substring(0, name.indexOf('@')));
+            } catch (Throwable e) {
+                PID = 0;
+            }
+        }
+        return PID;
     }
 }
