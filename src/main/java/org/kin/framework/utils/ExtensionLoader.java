@@ -178,7 +178,7 @@ public final class ExtensionLoader<E> {
      */
     private static void checkSupport(Class<?> extensionClass) {
         if (!extensionClass.isAnnotationPresent(SPI.class)) {
-            throw new IllegalArgumentException(extensionClass.getCanonicalName().concat("doesn't support spi, please ensure @SPI"));
+            throw new IllegalArgumentException(extensionClass.getCanonicalName().concat(" doesn't support spi, please ensure @SPI"));
         }
     }
 
