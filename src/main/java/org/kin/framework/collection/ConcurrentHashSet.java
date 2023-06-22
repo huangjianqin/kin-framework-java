@@ -2,6 +2,7 @@ package org.kin.framework.collection;
 
 import java.util.AbstractSet;
 import java.util.Iterator;
+import java.util.Objects;
 import java.util.Spliterator;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Consumer;
@@ -48,7 +49,7 @@ public class ConcurrentHashSet<E> extends AbstractSet<E> {
 
     @Override
     public boolean remove(Object o) {
-        return items.remove(o);
+        return Objects.nonNull(items.remove(o));
     }
 
     @Override
