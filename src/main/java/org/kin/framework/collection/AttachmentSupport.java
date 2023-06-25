@@ -73,4 +73,9 @@ public interface AttachmentSupport {
      * @return 所有attachment
      */
     Map<String, Object> attachments();
+
+    /**
+     * 移除所有attachment
+     */
+    void clear();
 }
