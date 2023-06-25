@@ -7,7 +7,7 @@ import java.util.Map;
  * @author huangjianqin
  * @date 2023/6/25
  */
-interface AttachmentSupport {
+public interface AttachmentSupport {
     /**
      * 批量attach
      *
