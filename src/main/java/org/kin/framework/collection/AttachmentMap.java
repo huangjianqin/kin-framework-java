@@ -10,7 +10,7 @@ import java.util.Objects;
  * @author huangjianqin
  * @date 2023/6/14
  */
-public class AttachmentMap {
+public class AttachmentMap implements AttachmentSupport{
     /** attachments */
     private final Map<String, Object> attachments;
 
@@ -30,8 +30,8 @@ public class AttachmentMap {
      * 批量attach
      *
      * @param attachments attachments
-     * @return this
      */
+    @Override
     public void attachMany(Map<String, ?> attachments) {
         this.attachments.putAll(attachments);
     }
@@ -41,6 +41,7 @@ public class AttachmentMap {
      *
      * @param other attachments
      */
+    @Override
     public void attachMany(AttachmentMap other) {
         this.attachments.putAll(other.attachments);
     }
@@ -54,6 +55,7 @@ public class AttachmentMap {
      */
     @SuppressWarnings("unchecked")
     @Nullable
+    @Override
     public <T> T attach(String key, Object obj) {
         return (T) attachments.put(key, obj);
     }
@@ -76,6 +78,7 @@ public class AttachmentMap {
      */
     @SuppressWarnings("unchecked")
     @Nullable
+    @Override
     public <T> T attachment(String key) {
         return (T) attachments.get(key);
     }
@@ -88,6 +91,7 @@ public class AttachmentMap {
      * @return attachment value
      */
     @SuppressWarnings("unchecked")
+    @Override
     public <T> T attachment(String key, T defaultValue) {
         return (T) attachments.getOrDefault(key, defaultValue);
     }
@@ -100,6 +104,7 @@ public class AttachmentMap {
      */
     @SuppressWarnings("unchecked")
     @Nullable
+    @Override
     public <T> T detach(String key) {
         return (T)attachments.remove(key);
     }
@@ -108,6 +113,7 @@ public class AttachmentMap {
      * 返回所有attachment
      * @return  所有attachment
      */
+    @Override
     public Map<String, Object> attachments(){
         return attachments;
     }
