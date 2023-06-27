@@ -19,14 +19,23 @@ public class DefaultAttributeMap  implements AttributeMap {
     @SuppressWarnings("rawtypes")
     private static final AtomicReferenceFieldUpdater<DefaultAttributeMap, AtomicReferenceArray> UPDATER =
             AtomicReferenceFieldUpdater.newUpdater(DefaultAttributeMap.class, AtomicReferenceArray.class, "attributes");
-    /** 原子数组bucket数量 */
-    private static final int BUCKET_SIZE = 4;
-    /** bucket mask */
-    private static final int MASK = BUCKET_SIZE  - 1;
 
+    /** 原子数组bucket数量 */
+    private final int bucketSize;
+    /** bucket mask */
+    private final int bucketMask;
     /** bucket数组, lazy init */
     @SuppressWarnings("UnusedDeclaration")
     private volatile AtomicReferenceArray<DefaultAttribute<?>> attributes;
+
+    public DefaultAttributeMap() {
+        this(4);
+    }
+
+    public DefaultAttributeMap(int bucketSize) {
+        this.bucketSize = bucketSize;
+        this.bucketMask = this.bucketSize - 1;
+    }
 
     @SuppressWarnings("unchecked")
     @Override
@@ -35,7 +44,7 @@ public class DefaultAttributeMap  implements AttributeMap {
         AtomicReferenceArray<DefaultAttribute<?>> attributes = this.attributes;
         if (attributes == null) {
             // Not using ConcurrentHashMap due to high memory consumption.
-            attributes = new AtomicReferenceArray<>(BUCKET_SIZE);
+            attributes = new AtomicReferenceArray<>(bucketSize);
 
             if (!UPDATER.compareAndSet(this, null, attributes)) {
                 attributes = this.attributes;
@@ -118,8 +127,8 @@ public class DefaultAttributeMap  implements AttributeMap {
      * @param key   attribute key
      * @return  bucket数组index
      */
-    private static int index(AttributeKey<?> key) {
-        return key.id() & MASK;
+    private int index(AttributeKey<?> key) {
+        return key.id() & bucketMask;
     }
 
     //---------------------------------------------------------------------------------------------------------
