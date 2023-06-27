@@ -14,6 +14,7 @@ import java.util.concurrent.atomic.AtomicReferenceArray;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import java.util.function.BiConsumer;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
 
 /**
  * value支持引用计数缓存实现
@@ -270,11 +271,19 @@ public class ReferenceCountedCache<K, V> {
     }
 
     /**
+     * 返回所有缓存value, 非同步操作, 不保证获取到缓存返回视图
+     * @return  集合
+     */
+    private Collection<V> values(){
+        return entries().stream().map(Entry::getValue).filter(Objects::nonNull).collect(Collectors.toList());
+    }
+
+    /**
      * 返回所有缓存entry, 非同步操作, 不保证获取到缓存返回视图
      *
      * @return 缓存entry集合
      */
-    public Collection<Entry<K, V>> entries() {
+    private Collection<Entry<K, V>> entries() {
         List<Entry<K, V>> entries = new ArrayList<>();
         AtomicReferenceArray<Entry<K, V>> cache = this.cache;
         for (int i = 0; i < bucketSize; i++) {
@@ -335,11 +344,11 @@ public class ReferenceCountedCache<K, V> {
          * 特殊{@link Entry}实现
          * 用于构造链表head
          */
-        public Entry() {
+        private Entry() {
             this(null, null);
         }
 
-        public Entry(Entry<K, V> head, K key) {
+        private Entry(Entry<K, V> head, K key) {
             this.head = head;
             this.key = key;
         }
@@ -381,6 +390,7 @@ public class ReferenceCountedCache<K, V> {
         public synchronized boolean release() {
             if (--counter <= 0) {
                 //从链表移除
+                value = null;
                 remove0();
                 return true;
             } else {
