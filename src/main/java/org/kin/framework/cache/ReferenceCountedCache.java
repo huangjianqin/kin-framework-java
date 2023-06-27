@@ -1,6 +1,7 @@
 package org.kin.framework.cache;
 
 import com.google.common.base.Preconditions;
+import org.kin.framework.utils.ExceptionUtils;
 import org.kin.framework.utils.HashUtils;
 
 import javax.annotation.Nullable;
@@ -350,7 +351,13 @@ public class ReferenceCountedCache<K, V> {
          */
         public synchronized V retainedGetOrCreate(Supplier<V> supplier) {
             if (value == null) {
-                value = supplier.get();
+                try {
+                    value = supplier.get();
+                } catch (Exception e) {
+                    //异常则移除缓存entry
+                    remove();
+                    ExceptionUtils.throwExt(e);
+                }
             }
             counter++;
             return value;

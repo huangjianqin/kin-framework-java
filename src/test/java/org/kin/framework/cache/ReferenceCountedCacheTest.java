@@ -1,9 +1,6 @@
 package org.kin.framework.cache;
 
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ThreadLocalRandom;
+import java.util.concurrent.*;
 
 /**
  * @author huangjianqin
@@ -86,5 +83,25 @@ public class ReferenceCountedCacheTest {
         System.out.println(cache);
         cache.clear();
         System.out.println(cache);
+        System.out.println("-----------------------------------");
+
+        int num = 1000;
+        CountDownLatch latch1 = new CountDownLatch(num);
+        for (int i = 0; i < num; i++) {
+            ForkJoinPool.commonPool().execute(() -> {
+                try {
+                    Thread.sleep(ThreadLocalRandom.current().nextInt(50));
+                    cache.get("t", () -> {
+                        throw new RuntimeException();
+                    });
+                } catch (Exception e) {
+
+                }
+                latch1.countDown();
+            });
+        }
+        latch1.await();
+        System.out.println(cache);
+        System.out.println("-----------------------------------");
     }
 }
