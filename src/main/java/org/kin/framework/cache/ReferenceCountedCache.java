@@ -274,7 +274,7 @@ public class ReferenceCountedCache<K, V> {
      * 返回所有缓存value, 非同步操作, 不保证获取到缓存返回视图
      * @return  集合
      */
-    private Collection<V> values(){
+    public Collection<V> values(){
         return entries().stream().map(Entry::getValue).filter(Objects::nonNull).collect(Collectors.toList());
     }
 
