@@ -358,13 +358,31 @@ public final class ExtensionLoader<E> {
     }
 
     /**
-     * 获取所有extension class实现类实例
+     * 获取所有extension class实现类实例, 如果extension class定义为非单例, 那么永远返回空集合
      *
      * @return 列表是以 {@link Extension#order()}降序排序
      */
     public static <E> List<E> getExtensions(Class<E> extensionClass) {
         //使用默认构造器创建extension实现类实例
-        return getExtensionLoader(extensionClass).getSortedExtensionMetaDataList().stream().map(ExtensionMetaData::getInstance).collect(Collectors.toList());
+        return getExtensionLoader(extensionClass).getSortedExtensionMetaDataList()
+                .stream()
+                .filter(ExtensionMetaData::isSingleton)
+                .map(ExtensionMetaData::getInstance)
+                .collect(Collectors.toList());
+    }
+
+    /**
+     * 获取所有extension class实现类实例, 如果extension class定义为非单例, 那么永远返回空集合
+     *
+     * @return 列表是以 {@link Extension#order()}降序排序
+     */
+    public static <E> List<E> getExtensions(Class<E> extensionClass, Object... args) {
+        //使用默认构造器创建extension实现类实例
+        return getExtensionLoader(extensionClass).getSortedExtensionMetaDataList()
+                .stream()
+                .filter(ExtensionMetaData::isSingleton)
+                .map(em -> em.getInstance(args))
+                .collect(Collectors.toList());
     }
     //-------------------------------------------------------------------------------------------------------------------
 

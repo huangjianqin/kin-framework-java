@@ -10,5 +10,8 @@ public class ExtensionLoaderTest {
         System.out.println(ExtensionLoader.getExtension(KinService.class, (byte) 1));
         System.out.println(ExtensionLoader.getExtension(KinService.class, "E"));
         System.out.println(ExtensionLoader.getExtensionOrDefault(KinService.class, "E"));
+
+        System.out.println(ExtensionLoader.getExtensions(AbsClass.class));
+        System.out.println(ExtensionLoader.getExtension(AbsClass.class, "B", "Hello"));
     }
 }
