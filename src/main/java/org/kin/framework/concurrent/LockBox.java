@@ -21,18 +21,22 @@ public class LockBox<K extends Comparable<K>> {
     /** 当前锁线程等待的锁列表 */
     private ThreadLocal<List<LockInfo>> threadLocal = new ThreadLocal<>();
 
+    /**
+     *
+     * @param key
+     * @param runnable
+     */
     public void lockRun(K key, Runnable runnable) {
-        if (!lockMap.containsKey(key)) {
-            synchronized (lockMap) {
-                if (!lockMap.containsKey(key)) {
-                    lockMap.put(key, new ReentrantLock());
-                }
-            }
-        }
-        Lock newLock = lockMap.get(key);
+        Lock newLock = lockMap.computeIfAbsent(key, k -> new ReentrantLock());
         lockRun(key, newLock, runnable);
     }
 
+    /**
+     *
+     * @param key
+     * @param lock
+     * @param runnable
+     */
     public void lockRun(K key, Lock lock, Runnable runnable) {
         List<LockInfo> curThreadLocks = threadLocal.get();
         if (curThreadLocks == null) {
@@ -78,11 +82,18 @@ public class LockBox<K extends Comparable<K>> {
         }
     }
 
+    /**
+     * 当前线程持有锁信息
+     */
     private class LockInfo implements Comparable<LockInfo> {
+        /** key */
         private K key;
+        /** 该key对应的lock */
         private Lock lock;
+        /** 获取lock成功后执行的task */
         private Runnable runnable;
 
+        /** 是否已获取lock */
         private boolean locking;
 
         public LockInfo(K key, Lock lock, Runnable runnable) {

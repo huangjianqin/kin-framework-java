@@ -17,7 +17,7 @@ import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
  */
 public class DefaultAttributeMap  implements AttributeMap {
     @SuppressWarnings("rawtypes")
-    private static final AtomicReferenceFieldUpdater<DefaultAttributeMap, AtomicReferenceArray> updater =
+    private static final AtomicReferenceFieldUpdater<DefaultAttributeMap, AtomicReferenceArray> UPDATER =
             AtomicReferenceFieldUpdater.newUpdater(DefaultAttributeMap.class, AtomicReferenceArray.class, "attributes");
     /** 原子数组bucket数量 */
     private static final int BUCKET_SIZE = 4;
@@ -37,7 +37,7 @@ public class DefaultAttributeMap  implements AttributeMap {
             // Not using ConcurrentHashMap due to high memory consumption.
             attributes = new AtomicReferenceArray<>(BUCKET_SIZE);
 
-            if (!updater.compareAndSet(this, null, attributes)) {
+            if (!UPDATER.compareAndSet(this, null, attributes)) {
                 attributes = this.attributes;
             }
         }
