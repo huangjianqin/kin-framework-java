@@ -70,9 +70,20 @@ public class ReferenceCountedCache<K, V> {
     }
 
     /**
+     * 添加缓存, 同时增加缓存引用计数
+     *
+     * @param k 缓存key
+     * @param v 缓存value
+     */
+    public void put(K k, V v) {
+        Preconditions.checkNotNull(k, "key");
+        get(k, () -> v);
+    }
+
+    /**
      * 返回缓存, 如果不存在, 则使用{@code supplier}同步创建value并缓存起来, 同时增加缓存引用计数
      *
-     * @param k           缓存key
+     * @param k        缓存key
      * @param supplier value   supplier
      * @return 缓存value
      */
@@ -84,7 +95,7 @@ public class ReferenceCountedCache<K, V> {
     /**
      * 返回缓存, 同时增加缓存引用计数
      *
-     * @param k           缓存key
+     * @param k 缓存key
      * @return 缓存value
      */
     @Nullable
@@ -106,8 +117,7 @@ public class ReferenceCountedCache<K, V> {
         Entry<K, V> entry = getEntry(k, false);
         if (Objects.nonNull(entry)) {
             return entry.getValue();
-        }
-        else{
+        } else {
             return null;
         }
     }
@@ -185,12 +195,12 @@ public class ReferenceCountedCache<K, V> {
      *
      * @param entry 缓存entry
      */
-    private void applyRemoveListener(Entry<K,V> entry) {
+    private void applyRemoveListener(Entry<K, V> entry) {
         if (Objects.isNull(removeListener)) {
             return;
         }
 
-        removeListener.accept(entry.getKey(),entry.getValue());
+        removeListener.accept(entry.getKey(), entry.getValue());
     }
 
     /**
@@ -232,7 +242,7 @@ public class ReferenceCountedCache<K, V> {
     /**
      * 强制清空缓存
      */
-    public void clear(){
+    public void clear() {
         AtomicReferenceArray<Entry<K, V>> cache = this.cache;
         if (Objects.isNull(cache)) {
             return;
@@ -272,9 +282,10 @@ public class ReferenceCountedCache<K, V> {
 
     /**
      * 返回所有缓存value, 非同步操作, 不保证获取到缓存返回视图
-     * @return  集合
+     *
+     * @return 集合
      */
-    public Collection<V> values(){
+    public Collection<V> values() {
         return entries().stream().map(Entry::getValue).filter(Objects::nonNull).collect(Collectors.toList());
     }
 
@@ -310,9 +321,10 @@ public class ReferenceCountedCache<K, V> {
 
     /**
      * 返回当前缓存大小, 非同步操作, 不保证准确
-     * @return  缓存大小
+     *
+     * @return 缓存大小
      */
-    public int size(){
+    public int size() {
         return entries().size();
     }
 
@@ -401,7 +413,7 @@ public class ReferenceCountedCache<K, V> {
         /**
          * 不管缓存entry引用计数是多少, 直接移除
          */
-        public synchronized void remove(){
+        public synchronized void remove() {
             counter = 0;
             remove0();
         }
