@@ -24,12 +24,12 @@ public @interface Extension {
     String value() default "";
 
     /**
-     * extension class编码，默认不需要，当接口需要编码的时候需要
+     * extension class编码，默认不需要，当扩展类需要编码的时候需要
      *
      * @return extension class编码
      * @see SPI#coded()
      */
-    byte code() default -1;
+    short code() default -1;
 
     /**
      * 优先级排序，默认不需要, 值越大优先级越高

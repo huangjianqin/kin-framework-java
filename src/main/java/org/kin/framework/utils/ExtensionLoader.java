@@ -68,7 +68,7 @@ public final class ExtensionLoader<E> {
      * key -> {@link Extension#code()}, value -> extension实现类元数据
      * 如果没有开启{@link SPI#coded()}, 则map为{@link Collections#emptyMap()}
      */
-    private final Map<Byte, ExtensionMetaData<E>> code2ExtensionMetaData;
+    private final Map<Short, ExtensionMetaData<E>> code2ExtensionMetaData;
 
     private ExtensionLoader(Class<E> extensionClass) {
         this(ExtensionLoader.class.getClassLoader(), extensionClass);
@@ -96,7 +96,7 @@ public final class ExtensionLoader<E> {
         //初始化extensionClass实现类元数据
         List<ExtensionMetaData<E>> extensionMetaDataList = new ArrayList<>();
         Map<String, ExtensionMetaData<E>> name2ExtensionMetaData = new HashMap<>();
-        Map<Byte, ExtensionMetaData<E>> code2ExtensionMetaData = null;
+        Map<Short, ExtensionMetaData<E>> code2ExtensionMetaData = null;
         if (isCoded()) {
             code2ExtensionMetaData = new HashMap<>();
         }
@@ -178,7 +178,7 @@ public final class ExtensionLoader<E> {
      */
     private static void checkSupport(Class<?> extensionClass) {
         if (!extensionClass.isAnnotationPresent(SPI.class)) {
-            throw new IllegalArgumentException(extensionClass.getCanonicalName().concat(" doesn't support spi, please ensure @SPI"));
+            throw new ExtensionException(extensionClass.getCanonicalName().concat(" doesn't support spi, please ensure @SPI"));
         }
     }
 
@@ -384,6 +384,21 @@ public final class ExtensionLoader<E> {
                 .map(em -> em.getInstance(args))
                 .collect(Collectors.toList());
     }
+
+    /**
+     * 根据extension class name | extension class simple name | {@link Extension#value()}获取extension实现类配置code
+     * 忽略大小写
+     *
+     * @param extensionClass extension class
+     * @param name           extension class name | extension class simple name | {@link Extension#value()}
+     */
+    public static <E> short getExtensionCode(Class<E> extensionClass, String name) {
+        ExtensionMetaData<E> extensionMetaData = getExtensionLoader(extensionClass).getByName(name);
+        if (Objects.nonNull(extensionMetaData)) {
+            return extensionMetaData.getCode();
+        }
+        return -1;
+    }
     //-------------------------------------------------------------------------------------------------------------------
 
     /**
@@ -490,13 +505,13 @@ public final class ExtensionLoader<E> {
     private void initAllExtensionMetaData(Set<String> implClassNames,
                                           List<ExtensionMetaData<E>> extensionMetaDataList,
                                           Map<String, ExtensionMetaData<E>> name2ExtensionMetaData,
-                                          @Nullable Map<Byte, ExtensionMetaData<E>> code2ExtensionMetaData) {
+                                          @Nullable Map<Short, ExtensionMetaData<E>> code2ExtensionMetaData) {
         for (String implClassName : implClassNames) {
             Class<? extends E> implClass = ClassUtils.getClass(implClassName, false, classLoader);
 
             //检查实现类是否继承(实现)extension class
             if (!extensionClass.isAssignableFrom(implClass)) {
-                throw new IllegalArgumentException(
+                throw new ExtensionException(
                         String.format("fail to load extension '%s', because it is not subtype of '%s'",
                                 implClass.getCanonicalName(), extensionClass.getName()));
             }
@@ -505,8 +520,8 @@ public final class ExtensionLoader<E> {
             Extension extension = implClass.getAnnotation(Extension.class);
             if (isCoded() && extension.code() < 0) {
                 //如果开启了coded, 但是Extension没有配置code, 则抛异常
-                throw new IllegalArgumentException(
-                        String.format("fail to load extension '%s', because it's code of @Extension must >=0",
+                throw new ExtensionException(
+                        String.format("fail to load extension '%s', because it's code must be greater than 0",
                                 implClass.getCanonicalName()));
             }
 
@@ -532,7 +547,7 @@ public final class ExtensionLoader<E> {
                 ExtensionMetaData<E> oldExtensionMetaData = name2ExtensionMetaData.put(name, extensionMetaData);
                 //检查name是否会冲突
                 if (Objects.nonNull(oldExtensionMetaData)) {
-                    throw new IllegalArgumentException(
+                    throw new ExtensionException(
                             String.format("fail to load extension '%s', because it's name is conflict, name=%s, conflict extension class is '%s'",
                                     implClass.getCanonicalName(), name, oldExtensionMetaData.getExtensionClass().getCanonicalName()));
                 }
@@ -540,13 +555,13 @@ public final class ExtensionLoader<E> {
 
             if (isCoded()) {
                 //如果开启了coded, 则需要缓存到code2ExtensionMetaData
-                byte code = extensionMetaData.getCode();
+                short code = extensionMetaData.getCode();
                 //noinspection ConstantConditions
                 ExtensionMetaData<E> oldExtensionMetaData = code2ExtensionMetaData.put(code, extensionMetaData);
                 //检查code是否会冲突
                 if (Objects.nonNull(oldExtensionMetaData)) {
-                    throw new IllegalArgumentException(
-                            String.format("fail to load extension '%s', because it's code of @Extension is conflict, code=%d, conflict extension class is '%s'",
+                    throw new ExtensionException(
+                            String.format("fail to load extension '%s', because it's code is conflict, code=%d, conflict extension class is '%s'",
                                     implClass.getCanonicalName(), code, oldExtensionMetaData.getExtensionClass().getCanonicalName()));
                 }
             }
@@ -681,7 +696,7 @@ public final class ExtensionLoader<E> {
         return name2ExtensionMetaData;
     }
 
-    public Map<Byte, ExtensionMetaData<E>> getCode2ExtensionMetaData() {
+    public Map<Short, ExtensionMetaData<E>> getCode2ExtensionMetaData() {
         return code2ExtensionMetaData;
     }
 
@@ -747,7 +762,7 @@ public final class ExtensionLoader<E> {
             return singleton;
         }
 
-        public byte getCode() {
+        public short getCode() {
             return Objects.nonNull(extension) ? extension.code() : -1;
         }
 

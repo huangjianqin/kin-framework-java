@@ -13,5 +13,7 @@ public class ExtensionLoaderTest {
 
         System.out.println(ExtensionLoader.getExtensions(AbsClass.class));
         System.out.println(ExtensionLoader.getExtension(AbsClass.class, "B", "Hello"));
+
+        System.out.println(ExtensionLoader.getExtensionCode(KinService.class, "B"));
     }
 }
