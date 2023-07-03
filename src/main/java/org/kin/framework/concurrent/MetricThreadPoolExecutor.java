@@ -13,27 +13,27 @@ import java.util.concurrent.TimeUnit;
  * @author huangjianqin
  * @date 2021/10/14
  */
-public class ThreadPoolExecutorWithMetric extends ThreadPoolExecutorWithLog {
+public class MetricThreadPoolExecutor extends MonitorableThreadPoolExecutor {
     private static final ThreadLocal<Timer.Sample> TIMER_SAMPLE_THREAD_LOCAL = new ThreadLocal<>();
 
-    public ThreadPoolExecutorWithMetric(int corePoolSize, int maximumPoolSize, long keepAliveTime, TimeUnit unit,
-                                        BlockingQueue<Runnable> workQueue, String name) {
+    public MetricThreadPoolExecutor(int corePoolSize, int maximumPoolSize, long keepAliveTime, TimeUnit unit,
+                                    BlockingQueue<Runnable> workQueue, String name) {
         super(corePoolSize, maximumPoolSize, keepAliveTime, unit, workQueue, name);
     }
 
-    public ThreadPoolExecutorWithMetric(int corePoolSize, int maximumPoolSize, long keepAliveTime, TimeUnit unit,
-                                        BlockingQueue<Runnable> workQueue, ThreadFactory threadFactory, String name) {
+    public MetricThreadPoolExecutor(int corePoolSize, int maximumPoolSize, long keepAliveTime, TimeUnit unit,
+                                    BlockingQueue<Runnable> workQueue, ThreadFactory threadFactory, String name) {
         super(corePoolSize, maximumPoolSize, keepAliveTime, unit, workQueue, threadFactory, name);
     }
 
-    public ThreadPoolExecutorWithMetric(int corePoolSize, int maximumPoolSize, long keepAliveTime, TimeUnit unit,
-                                        BlockingQueue<Runnable> workQueue, java.util.concurrent.RejectedExecutionHandler handler, String name) {
+    public MetricThreadPoolExecutor(int corePoolSize, int maximumPoolSize, long keepAliveTime, TimeUnit unit,
+                                    BlockingQueue<Runnable> workQueue, java.util.concurrent.RejectedExecutionHandler handler, String name) {
         super(corePoolSize, maximumPoolSize, keepAliveTime, unit, workQueue, handler, name);
     }
 
-    public ThreadPoolExecutorWithMetric(int corePoolSize, int maximumPoolSize, long keepAliveTime, TimeUnit unit,
-                                        BlockingQueue<Runnable> workQueue, ThreadFactory threadFactory,
-                                        RejectedExecutionHandler handler, String name) {
+    public MetricThreadPoolExecutor(int corePoolSize, int maximumPoolSize, long keepAliveTime, TimeUnit unit,
+                                    BlockingQueue<Runnable> workQueue, ThreadFactory threadFactory,
+                                    RejectedExecutionHandler handler, String name) {
         super(corePoolSize, maximumPoolSize, keepAliveTime, unit, workQueue, threadFactory, handler, name);
     }
 

@@ -11,23 +11,23 @@ import java.util.concurrent.ThreadFactory;
  * @author huangjianqin
  * @date 2021/10/14
  */
-public class ScheduledThreadPoolExecutorWithMetric extends ScheduledThreadPoolExecutorWithLog {
+public class MetricScheduledThreadPoolExecutor extends MonitorableScheduledThreadPoolExecutor {
     private static final ThreadLocal<Timer.Sample> TIMER_SAMPLE_THREAD_LOCAL = new ThreadLocal<>();
 
-    public ScheduledThreadPoolExecutorWithMetric(int corePoolSize, String name) {
+    public MetricScheduledThreadPoolExecutor(int corePoolSize, String name) {
         super(corePoolSize, name);
     }
 
-    public ScheduledThreadPoolExecutorWithMetric(int corePoolSize, ThreadFactory threadFactory, String name) {
+    public MetricScheduledThreadPoolExecutor(int corePoolSize, ThreadFactory threadFactory, String name) {
         super(corePoolSize, threadFactory, name);
     }
 
-    public ScheduledThreadPoolExecutorWithMetric(int corePoolSize, java.util.concurrent.RejectedExecutionHandler handler, String name) {
+    public MetricScheduledThreadPoolExecutor(int corePoolSize, java.util.concurrent.RejectedExecutionHandler handler, String name) {
         super(corePoolSize, handler, name);
     }
 
-    public ScheduledThreadPoolExecutorWithMetric(int corePoolSize, ThreadFactory threadFactory,
-                                                 RejectedExecutionHandler handler, String name) {
+    public MetricScheduledThreadPoolExecutor(int corePoolSize, ThreadFactory threadFactory,
+                                             RejectedExecutionHandler handler, String name) {
         super(corePoolSize, threadFactory, handler, name);
     }
 

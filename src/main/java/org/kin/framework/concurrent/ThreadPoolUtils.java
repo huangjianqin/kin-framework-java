@@ -48,10 +48,10 @@ public final class ThreadPoolUtils {
                                                    ThreadFactory threadFactory,
                                                    java.util.concurrent.RejectedExecutionHandler rejectedHandler) {
         if (enableMetric) {
-            return new ThreadPoolExecutorWithMetric(coreThreads, maximumThreads, keepAliveTime, unit, workQueue,
+            return new MetricThreadPoolExecutor(coreThreads, maximumThreads, keepAliveTime, unit, workQueue,
                     threadFactory, rejectedHandler, poolName);
         } else {
-            return new ThreadPoolExecutorWithLog(coreThreads, maximumThreads, keepAliveTime, unit, workQueue,
+            return new MonitorableThreadPoolExecutor(coreThreads, maximumThreads, keepAliveTime, unit, workQueue,
                     threadFactory, rejectedHandler, poolName);
         }
     }
@@ -72,10 +72,10 @@ public final class ThreadPoolUtils {
                                                              ThreadFactory threadFactory,
                                                              java.util.concurrent.RejectedExecutionHandler rejectedHandler) {
         if (enableMetric) {
-            return EagerThreadPoolExecutorWithMetric.create(poolName, coreThreads, maximumThreads, keepAliveTime, unit, queueSize,
+            return MetricEagerThreadPoolExecutor.create(poolName, coreThreads, maximumThreads, keepAliveTime, unit, queueSize,
                     threadFactory, rejectedHandler);
         } else {
-            return EagerThreadPoolExecutorWithLog.create(poolName, coreThreads, maximumThreads, keepAliveTime, unit, queueSize,
+            return MonitorableEagerThreadPoolExecutor.create(poolName, coreThreads, maximumThreads, keepAliveTime, unit, queueSize,
                     threadFactory, rejectedHandler);
         }
     }
@@ -89,9 +89,9 @@ public final class ThreadPoolUtils {
                                                int parallelism, ForkJoinPool.ForkJoinWorkerThreadFactory factory,
                                                Thread.UncaughtExceptionHandler handler, boolean asyncMode) {
         if (enableMetric) {
-            return new ForkJoinPoolWithMetric(parallelism, factory, handler, asyncMode, poolName);
+            return new MetricForkJoinPool(parallelism, factory, handler, asyncMode, poolName);
         } else {
-            return new ForkJoinPoolWithLog(parallelism, factory, handler, asyncMode, poolName);
+            return new MonitorableForkJoinPool(parallelism, factory, handler, asyncMode, poolName);
         }
     }
 
@@ -106,9 +106,9 @@ public final class ThreadPoolUtils {
                                                                      ThreadFactory threadFactory,
                                                                      java.util.concurrent.RejectedExecutionHandler rejectedHandler) {
         if (enableMetric) {
-            return new ScheduledThreadPoolExecutorWithMetric(coreThreads, threadFactory, rejectedHandler, poolName);
+            return new MetricScheduledThreadPoolExecutor(coreThreads, threadFactory, rejectedHandler, poolName);
         } else {
-            return new ScheduledThreadPoolExecutorWithLog(coreThreads, threadFactory, rejectedHandler, poolName);
+            return new MonitorableScheduledThreadPoolExecutor(coreThreads, threadFactory, rejectedHandler, poolName);
         }
     }
 

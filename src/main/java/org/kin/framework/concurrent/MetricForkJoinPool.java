@@ -8,16 +8,16 @@ import java.util.concurrent.*;
  * @author huangjianqin
  * @date 2021/10/15
  */
-public class ForkJoinPoolWithMetric extends ForkJoinPoolWithLog {
-    public ForkJoinPoolWithMetric(String name) {
+public class MetricForkJoinPool extends MonitorableForkJoinPool {
+    public MetricForkJoinPool(String name) {
         super(name);
     }
 
-    public ForkJoinPoolWithMetric(int parallelism, String name) {
+    public MetricForkJoinPool(int parallelism, String name) {
         super(parallelism, name);
     }
 
-    public ForkJoinPoolWithMetric(int parallelism, ForkJoinWorkerThreadFactory factory, Thread.UncaughtExceptionHandler handler, boolean asyncMode, String name) {
+    public MetricForkJoinPool(int parallelism, ForkJoinWorkerThreadFactory factory, Thread.UncaughtExceptionHandler handler, boolean asyncMode, String name) {
         super(parallelism, factory, handler, asyncMode, name);
     }
 

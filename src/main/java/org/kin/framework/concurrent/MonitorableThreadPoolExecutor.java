@@ -10,35 +10,35 @@ import java.util.concurrent.*;
  * @author huangjianqin
  * @date 2021/10/14
  */
-public class ThreadPoolExecutorWithLog extends ThreadPoolExecutor {
-    private static final Logger log = LoggerFactory.getLogger(ThreadPoolExecutorWithLog.class);
+public class MonitorableThreadPoolExecutor extends ThreadPoolExecutor {
+    private static final Logger log = LoggerFactory.getLogger(MonitorableThreadPoolExecutor.class);
 
     private final String name;
 
-    public ThreadPoolExecutorWithLog(int corePoolSize, int maximumPoolSize, long keepAliveTime, TimeUnit unit,
-                                     BlockingQueue<Runnable> workQueue, String name) {
+    public MonitorableThreadPoolExecutor(int corePoolSize, int maximumPoolSize, long keepAliveTime, TimeUnit unit,
+                                         BlockingQueue<Runnable> workQueue, String name) {
         super(corePoolSize, maximumPoolSize, keepAliveTime, unit, workQueue);
         name = ThreadPoolUtils.applyPoolNameIfBlank(name, null);
         this.name = name;
     }
 
-    public ThreadPoolExecutorWithLog(int corePoolSize, int maximumPoolSize, long keepAliveTime, TimeUnit unit,
-                                     BlockingQueue<Runnable> workQueue, ThreadFactory threadFactory, String name) {
+    public MonitorableThreadPoolExecutor(int corePoolSize, int maximumPoolSize, long keepAliveTime, TimeUnit unit,
+                                         BlockingQueue<Runnable> workQueue, ThreadFactory threadFactory, String name) {
         super(corePoolSize, maximumPoolSize, keepAliveTime, unit, workQueue, threadFactory);
         name = ThreadPoolUtils.applyPoolNameIfBlank(name, threadFactory);
         this.name = name;
     }
 
-    public ThreadPoolExecutorWithLog(int corePoolSize, int maximumPoolSize, long keepAliveTime, TimeUnit unit,
-                                     BlockingQueue<Runnable> workQueue, java.util.concurrent.RejectedExecutionHandler handler, String name) {
+    public MonitorableThreadPoolExecutor(int corePoolSize, int maximumPoolSize, long keepAliveTime, TimeUnit unit,
+                                         BlockingQueue<Runnable> workQueue, java.util.concurrent.RejectedExecutionHandler handler, String name) {
         super(corePoolSize, maximumPoolSize, keepAliveTime, unit, workQueue, handler);
         name = ThreadPoolUtils.applyPoolNameIfBlank(name, null);
         this.name = name;
     }
 
-    public ThreadPoolExecutorWithLog(int corePoolSize, int maximumPoolSize, long keepAliveTime, TimeUnit unit,
-                                     BlockingQueue<Runnable> workQueue, ThreadFactory threadFactory,
-                                     RejectedExecutionHandler handler, String name) {
+    public MonitorableThreadPoolExecutor(int corePoolSize, int maximumPoolSize, long keepAliveTime, TimeUnit unit,
+                                         BlockingQueue<Runnable> workQueue, ThreadFactory threadFactory,
+                                         RejectedExecutionHandler handler, String name) {
         super(corePoolSize, maximumPoolSize, keepAliveTime, unit, workQueue, threadFactory, handler);
         name = ThreadPoolUtils.applyPoolNameIfBlank(name, threadFactory);
         this.name = name;

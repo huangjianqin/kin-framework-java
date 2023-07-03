@@ -11,23 +11,23 @@ import java.util.concurrent.*;
  * @author huangjianqin
  * @date 2021/10/15
  */
-public class ForkJoinPoolWithLog extends ForkJoinPool {
-    private static final Logger log = LoggerFactory.getLogger(ForkJoinPoolWithLog.class);
+public class MonitorableForkJoinPool extends ForkJoinPool {
+    private static final Logger log = LoggerFactory.getLogger(MonitorableForkJoinPool.class);
 
     private final String name;
 
-    public ForkJoinPoolWithLog(String name) {
+    public MonitorableForkJoinPool(String name) {
         this.name = name;
     }
 
-    public ForkJoinPoolWithLog(int parallelism, String name) {
+    public MonitorableForkJoinPool(int parallelism, String name) {
         super(parallelism);
         this.name = name;
     }
 
-    public ForkJoinPoolWithLog(int parallelism, ForkJoinWorkerThreadFactory factory,
-                               Thread.UncaughtExceptionHandler handler, boolean asyncMode,
-                               String name) {
+    public MonitorableForkJoinPool(int parallelism, ForkJoinWorkerThreadFactory factory,
+                                   Thread.UncaughtExceptionHandler handler, boolean asyncMode,
+                                   String name) {
         super(parallelism, factory, handler, asyncMode);
         if (StringUtils.isBlank(name) && factory instanceof SimpleForkJoinWorkerThreadFactory) {
             SimpleForkJoinWorkerThreadFactory simpleForkJoinWorkerThreadFactory = (SimpleForkJoinWorkerThreadFactory) factory;

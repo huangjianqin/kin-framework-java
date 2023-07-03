@@ -10,30 +10,30 @@ import java.util.concurrent.*;
  * @author huangjianqin
  * @date 2021/10/14
  */
-public class ScheduledThreadPoolExecutorWithLog extends ScheduledThreadPoolExecutor {
-    private static final Logger log = LoggerFactory.getLogger(ScheduledThreadPoolExecutorWithLog.class);
+public class MonitorableScheduledThreadPoolExecutor extends ScheduledThreadPoolExecutor {
+    private static final Logger log = LoggerFactory.getLogger(MonitorableScheduledThreadPoolExecutor.class);
 
     private final String name;
 
-    public ScheduledThreadPoolExecutorWithLog(int corePoolSize, String name) {
+    public MonitorableScheduledThreadPoolExecutor(int corePoolSize, String name) {
         super(corePoolSize);
         name = ThreadPoolUtils.applyPoolNameIfBlank(name, null);
         this.name = name;
     }
 
-    public ScheduledThreadPoolExecutorWithLog(int corePoolSize, ThreadFactory threadFactory, String name) {
+    public MonitorableScheduledThreadPoolExecutor(int corePoolSize, ThreadFactory threadFactory, String name) {
         super(corePoolSize, threadFactory);
         name = ThreadPoolUtils.applyPoolNameIfBlank(name, threadFactory);
         this.name = name;
     }
 
-    public ScheduledThreadPoolExecutorWithLog(int corePoolSize, RejectedExecutionHandler handler, String name) {
+    public MonitorableScheduledThreadPoolExecutor(int corePoolSize, RejectedExecutionHandler handler, String name) {
         super(corePoolSize, handler);
         name = ThreadPoolUtils.applyPoolNameIfBlank(name, null);
         this.name = name;
     }
 
-    public ScheduledThreadPoolExecutorWithLog(int corePoolSize, ThreadFactory threadFactory, RejectedExecutionHandler handler, String name) {
+    public MonitorableScheduledThreadPoolExecutor(int corePoolSize, ThreadFactory threadFactory, RejectedExecutionHandler handler, String name) {
         super(corePoolSize, threadFactory, handler);
         name = ThreadPoolUtils.applyPoolNameIfBlank(name, threadFactory);
         this.name = name;
