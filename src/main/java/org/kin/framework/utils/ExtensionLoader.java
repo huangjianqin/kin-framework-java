@@ -597,7 +597,7 @@ public final class ExtensionLoader<E> {
         //默认认为是简称
         availableNames.add(name.toLowerCase());
         //extension class simple name
-        availableNames.add(extensionClass.getPackage().getName().concat(".").concat(name).toLowerCase());
+        availableNames.add(name.concat(extensionClass.getSimpleName()).toLowerCase());
         //extension class name
         availableNames.add(extensionClass.getPackage().getName().concat(".").concat(name).concat(extensionClass.getSimpleName()).toLowerCase());
 
