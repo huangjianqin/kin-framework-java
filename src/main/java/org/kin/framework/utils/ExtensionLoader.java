@@ -14,6 +14,7 @@ import java.io.*;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 /**
@@ -243,7 +244,7 @@ public final class ExtensionLoader<E> {
     public static <E> E getExtension(Class<E> extensionClass, String name) {
         ExtensionMetaData<E> extensionMetaData = getExtensionLoader(extensionClass).getByName(name);
         if (Objects.nonNull(extensionMetaData)) {
-            return extensionMetaData.getInstance();
+            return extensionMetaData.getOrCreateInstance();
         }
         return null;
     }
@@ -259,7 +260,24 @@ public final class ExtensionLoader<E> {
     public static <E> E getExtension(Class<E> extensionClass, String name, Object... args) {
         ExtensionMetaData<E> extensionMetaData = getExtensionLoader(extensionClass).getByName(name);
         if (Objects.nonNull(extensionMetaData)) {
-            return extensionMetaData.getInstance(args);
+            return extensionMetaData.getOrCreateInstance(args);
+        }
+        return null;
+    }
+
+    /**
+     * 根据extension class name | extension class simple name | {@link Extension#value()}获取extension实现类实例
+     * 忽略大小写
+     *
+     * @param extensionClass extension class
+     * @param name           extension class name | extension class simple name | {@link Extension#value()}
+     * @param cParamTypes    构造方法参数类型
+     * @param args           extension class实现类构造方法参数
+     */
+    public static <E> E getExtension(Class<E> extensionClass, String name, Class<?>[] cParamTypes, Object... args) {
+        ExtensionMetaData<E> extensionMetaData = getExtensionLoader(extensionClass).getByName(name);
+        if (Objects.nonNull(extensionMetaData)) {
+            return extensionMetaData.getOrCreateInstance(cParamTypes, args);
         }
         return null;
     }
@@ -275,7 +293,7 @@ public final class ExtensionLoader<E> {
     public static <E> E getExtensionOrDefault(Class<E> extensionClass, String name) {
         ExtensionMetaData<E> extensionMetaData = getExtensionLoader(extensionClass).getByNameOrDefault(name);
         if (Objects.nonNull(extensionMetaData)) {
-            return extensionMetaData.getInstance();
+            return extensionMetaData.getOrCreateInstance();
         }
         return null;
     }
@@ -292,7 +310,25 @@ public final class ExtensionLoader<E> {
     public static <E> E getExtensionOrDefault(Class<E> extensionClass, String name, Object... args) {
         ExtensionMetaData<E> extensionMetaData = getExtensionLoader(extensionClass).getByNameOrDefault(name);
         if (Objects.nonNull(extensionMetaData)) {
-            return extensionMetaData.getInstance(args);
+            return extensionMetaData.getOrCreateInstance(args);
+        }
+        return null;
+    }
+
+    /**
+     * 根据extension class name | extension class simple name | {@link Extension#value()}获取extension实现类实例
+     * 忽略大小写
+     * 如果找不到, 则返回默认的extension实现类, 即name为{@link SPI#value()}的extension实现类
+     *
+     * @param extensionClass extension class
+     * @param name           extension class name | extension class simple name | {@link Extension#value()}
+     * @param cParamTypes    构造方法参数类型
+     * @param args           extension class实现类构造方法参数
+     */
+    public static <E> E getExtensionOrDefault(Class<E> extensionClass, String name, Class<?>[] cParamTypes, Object... args) {
+        ExtensionMetaData<E> extensionMetaData = getExtensionLoader(extensionClass).getByNameOrDefault(name);
+        if (Objects.nonNull(extensionMetaData)) {
+            return extensionMetaData.getOrCreateInstance(cParamTypes, args);
         }
         return null;
     }
@@ -304,9 +340,9 @@ public final class ExtensionLoader<E> {
      * @param code           对应实现类{@link Extension#code()}
      */
     public static <E> E getExtension(Class<E> extensionClass, int code) {
-        ExtensionMetaData<E> extensionMetaData = getExtensionLoader(extensionClass).getByCode((byte) code);
+        ExtensionMetaData<E> extensionMetaData = getExtensionLoader(extensionClass).getByCode((short) code);
         if (Objects.nonNull(extensionMetaData)) {
-            return extensionMetaData.getInstance();
+            return extensionMetaData.getOrCreateInstance();
         }
         return null;
     }
@@ -319,9 +355,25 @@ public final class ExtensionLoader<E> {
      * @param args           extension class实现类构造方法参数
      */
     public static <E> E getExtension(Class<E> extensionClass, int code, Object... args) {
-        ExtensionMetaData<E> extensionMetaData = getExtensionLoader(extensionClass).getByCode((byte) code);
+        ExtensionMetaData<E> extensionMetaData = getExtensionLoader(extensionClass).getByCode((short) code);
         if (Objects.nonNull(extensionMetaData)) {
-            return extensionMetaData.getInstance(args);
+            return extensionMetaData.getOrCreateInstance(args);
+        }
+        return null;
+    }
+
+    /**
+     * 根据{@link Extension#code()}获取extension实现类实例
+     *
+     * @param extensionClass extension class
+     * @param code           对应实现类{@link Extension#code()}
+     * @param cParamTypes    构造方法参数类型
+     * @param args           extension class实现类构造方法参数
+     */
+    public static <E> E getExtension(Class<E> extensionClass, int code, Class<?>[] cParamTypes, Object... args) {
+        ExtensionMetaData<E> extensionMetaData = getExtensionLoader(extensionClass).getByCode((short)code);
+        if (Objects.nonNull(extensionMetaData)) {
+            return extensionMetaData.getOrCreateInstance(cParamTypes, args);
         }
         return null;
     }
@@ -334,9 +386,9 @@ public final class ExtensionLoader<E> {
      * @param code           对应实现类{@link Extension#code()}
      */
     public static <E> E getExtensionOrDefault(Class<E> extensionClass, int code) {
-        ExtensionMetaData<E> extensionMetaData = getExtensionLoader(extensionClass).getByCodeOrDefault((byte) code);
+        ExtensionMetaData<E> extensionMetaData = getExtensionLoader(extensionClass).getByCodeOrDefault((short)code);
         if (Objects.nonNull(extensionMetaData)) {
-            return extensionMetaData.getInstance();
+            return extensionMetaData.getOrCreateInstance();
         }
         return null;
     }
@@ -350,9 +402,26 @@ public final class ExtensionLoader<E> {
      * @param args           extension class实现类构造方法参数
      */
     public static <E> E getExtensionOrDefault(Class<E> extensionClass, int code, Object... args) {
-        ExtensionMetaData<E> extensionMetaData = getExtensionLoader(extensionClass).getByCodeOrDefault((byte) code);
+        ExtensionMetaData<E> extensionMetaData = getExtensionLoader(extensionClass).getByCodeOrDefault((short)code);
         if (Objects.nonNull(extensionMetaData)) {
-            return extensionMetaData.getInstance(args);
+            return extensionMetaData.getOrCreateInstance(args);
+        }
+        return null;
+    }
+
+    /**
+     * 根据{@link Extension#code()}获取extension实现类实例
+     * 如果找不到, 则返回默认的extension实现类, 即name为{@link SPI#value()}的extension实现类
+     *
+     * @param extensionClass extension class
+     * @param code           对应实现类{@link Extension#code()}
+     * @param cParamTypes    构造方法参数类型
+     * @param args           extension class实现类构造方法参数
+     */
+    public static <E> E getExtensionOrDefault(Class<E> extensionClass, int code, Class<?>[] cParamTypes, Object... args) {
+        ExtensionMetaData<E> extensionMetaData = getExtensionLoader(extensionClass).getByCodeOrDefault((short)code);
+        if (Objects.nonNull(extensionMetaData)) {
+            return extensionMetaData.getOrCreateInstance(cParamTypes, args);
         }
         return null;
     }
@@ -367,7 +436,7 @@ public final class ExtensionLoader<E> {
         return getExtensionLoader(extensionClass).getSortedExtensionMetaDataList()
                 .stream()
                 .filter(ExtensionMetaData::isSingleton)
-                .map(ExtensionMetaData::getInstance)
+                .map(ExtensionMetaData::getOrCreateInstance)
                 .collect(Collectors.toList());
     }
 
@@ -381,7 +450,23 @@ public final class ExtensionLoader<E> {
         return getExtensionLoader(extensionClass).getSortedExtensionMetaDataList()
                 .stream()
                 .filter(ExtensionMetaData::isSingleton)
-                .map(em -> em.getInstance(args))
+                .map(em -> em.getOrCreateInstance(args))
+                .collect(Collectors.toList());
+    }
+
+    /**
+     * 获取所有extension class实现类实例, 如果extension class定义为非单例, 那么永远返回空集合
+     *
+     * @param cParamTypes 构造方法参数类型
+     * @param args        extension class实现类构造方法参数
+     * @return 列表是以 {@link Extension#order()}降序排序
+     */
+    public static <E> List<E> getExtensions(Class<E> extensionClass, Class<?>[] cParamTypes, Object... args) {
+        //使用默认构造器创建extension实现类实例
+        return getExtensionLoader(extensionClass).getSortedExtensionMetaDataList()
+                .stream()
+                .filter(ExtensionMetaData::isSingleton)
+                .map(em -> em.getOrCreateInstance(cParamTypes, args))
                 .collect(Collectors.toList());
     }
 
@@ -636,7 +721,7 @@ public final class ExtensionLoader<E> {
      * @param code 对应实现类{@link Extension#code()}
      */
     @Nullable
-    public ExtensionMetaData<E> getByCode(byte code) {
+    public ExtensionMetaData<E> getByCode(short code) {
         return code2ExtensionMetaData.get(code);
     }
 
@@ -647,7 +732,7 @@ public final class ExtensionLoader<E> {
      * @param code 对应实现类{@link Extension#code()}
      */
     @Nullable
-    public ExtensionMetaData<E> getByCodeOrDefault(byte code) {
+    public ExtensionMetaData<E> getByCodeOrDefault(short code) {
         ExtensionMetaData<E> extensionMetaData = code2ExtensionMetaData.get(code);
         if (Objects.isNull(extensionMetaData)) {
             extensionMetaData = getDefaultExtension();
@@ -726,30 +811,46 @@ public final class ExtensionLoader<E> {
         }
 
         /**
-         * 获取extension实现类实例
+         * 返回extension实现类实例
          */
         @Nonnull
-        public E getInstance() {
-            return getInstance(null);
+        public E getOrCreateInstance() {
+            return getOrCreateInstance(new Object[]{});
         }
 
         /**
-         * 获取extension实现类实例
+         * 返回extension实现类实例
          */
         @Nonnull
-        public E getInstance(Object[] args) {
+        public E getOrCreateInstance(Object[] args) {
+            return getOrCreateInstance(() -> ClassUtils.instance(claxx, args));
+        }
+
+        /**
+         * 返回extension实现类实例
+         */
+        @Nonnull
+        public E getOrCreateInstance(Class<?>[] cParamTypes, Object[] args) {
+            return getOrCreateInstance(() -> ClassUtils.instance(claxx, cParamTypes, args));
+        }
+
+        /**
+         * 返回extension实现类实例
+         * 单例, 仅仅只会实例化一次
+         */
+        private E getOrCreateInstance(Supplier<E> supplier) {
             if (singleton) {
                 //单例
                 if (instance == null) {
                     synchronized (this) {
                         if (instance == null) {
-                            instance = ClassUtils.instance(claxx, args);
+                            instance = supplier.get();
                         }
                     }
                 }
                 return instance;
             } else {
-                return ClassUtils.instance(claxx, args);
+                return supplier.get();
             }
         }
 

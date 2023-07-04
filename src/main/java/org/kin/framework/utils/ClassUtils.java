@@ -172,7 +172,7 @@ public class ClassUtils {
     /**
      * 根据{@code cParamTypes}类型精准匹配构造方法并实例化
      */
-    public static <T> T instance(Class<T> type, Class<T>[] cParamTypes, Object... args) {
+    public static <T> T instance(Class<T> type, Class<?>[] cParamTypes, Object... args) {
         if (type == null) {
             return null;
         }
