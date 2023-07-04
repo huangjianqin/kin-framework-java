@@ -111,12 +111,12 @@ public class ClassUtils {
     /**
      * 通过无参构造器实例化类
      */
-    public static <T> T instance(Class<T> claxx) {
-        if (claxx == null) {
+    public static <T> T instance(Class<T> type) {
+        if (type == null) {
             return null;
         }
         try {
-            return claxx.newInstance();
+            return type.newInstance();
         } catch (InstantiationException | IllegalAccessException e) {
             ExceptionUtils.throwExt(e);
         }
@@ -130,8 +130,8 @@ public class ClassUtils {
             return null;
         }
         try {
-            Class<T> claxx = (Class<T>) Class.forName(classStr);
-            return instance(claxx);
+            Class<T> type = (Class<T>) Class.forName(classStr);
+            return instance(type);
         } catch (ClassNotFoundException e) {
             ExceptionUtils.throwExt(e);
         }
@@ -140,15 +140,16 @@ public class ClassUtils {
     }
 
     /**
-     * 根据参数调用构造器实例化类
+     * 寻找合适构造器并实例化
+     * 如果不能根据参数类型精准匹配(等于{@code args}类型)构造方法, 则模糊匹配(重载)寻找合适的构造方法
      */
-    public static <T> T instance(Class<T> claxx, Object... args) {
-        if (claxx == null) {
+    public static <T> T instance(Class<T> type, Object... args) {
+        if (type == null) {
             return null;
         }
 
         if (CollectionUtils.isEmpty(args)) {
-            return instance(claxx);
+            return instance(type);
         }
 
         try {
@@ -156,7 +157,32 @@ public class ClassUtils {
             for (int i = 0; i < args.length; i++) {
                 argClasses[i] = args[i].getClass();
             }
-            Constructor<T> constructor = claxx.getDeclaredConstructor(argClasses);
+            Constructor<T> constructor = type.getDeclaredConstructor(argClasses);
+            return constructor.newInstance(args);
+        } catch (InstantiationException | IllegalAccessException
+                 | InvocationTargetException e) {
+            ExceptionUtils.throwExt(e);
+        } catch (NoSuchMethodException e) {
+            return slowInstance(type, args);
+        }
+
+        throw new IllegalStateException("encounter unknown error");
+    }
+
+    /**
+     * 根据{@code cParamTypes}类型精准匹配构造方法并实例化
+     */
+    public static <T> T instance(Class<T> type, Class<T>[] cParamTypes, Object... args) {
+        if (type == null) {
+            return null;
+        }
+
+        if (CollectionUtils.isEmpty(cParamTypes)) {
+            return instance(type);
+        }
+
+        try {
+            Constructor<T> constructor = type.getDeclaredConstructor(cParamTypes);
             return constructor.newInstance(args);
         } catch (InstantiationException | IllegalAccessException |
                 NoSuchMethodException | InvocationTargetException e) {
@@ -164,6 +190,96 @@ public class ClassUtils {
         }
 
         throw new IllegalStateException("encounter unknown error");
+    }
+
+    /**
+     * 模糊匹配(重载)寻找合适的构造方法并实例化
+     */
+    @SuppressWarnings("unchecked")
+    public static <T> T slowInstance(Class<T> type, Object... args) {
+        try {
+            Class<?>[] argClasses = new Class<?>[args.length];
+            for (int i = 0; i < args.length; i++) {
+                argClasses[i] = args[i].getClass();
+            }
+            Constructor<T> constructor = null;
+            for (Constructor<?> candidate : type.getDeclaredConstructors()) {
+                if (!Modifier.isPublic(candidate.getModifiers())) {
+                    //非public
+                    continue;
+                }
+
+                if (!isClassArrayMatch(candidate.getParameterTypes(), argClasses)) {
+                    //参数不匹配
+                    continue;
+                }
+
+                if (Objects.nonNull(constructor)) {
+                    throw new IllegalArgumentException(String.format("find more than one %s constructor which parameter types is can assignable from %s",
+                            type.getName(), classArrayToString(argClasses)));
+                }
+
+                constructor = (Constructor<T>) candidate;
+            }
+            if (Objects.isNull(constructor)) {
+                throw new IllegalArgumentException(String.format("can not find any %s constructor which parameter types is can assignable from %s",
+                        type.getName(), classArrayToString(argClasses)));
+            }
+            return constructor.newInstance(args);
+        } catch (InstantiationException | IllegalAccessException |
+                 InvocationTargetException e) {
+            ExceptionUtils.throwExt(e);
+        }
+
+        throw new IllegalStateException("encounter unknown error");
+    }
+
+    /**
+     * {@link Class}数组toString
+     * @param argTypes class array
+     * @return string of class array
+     */
+    private static String classArrayToString(Class<?>[] argTypes) {
+        StringBuilder buf = new StringBuilder();
+        buf.append("(");
+        if (argTypes != null) {
+            for (int i = 0; i < argTypes.length; i++) {
+                if (i > 0) {
+                    buf.append(", ");
+                }
+                Class<?> c = argTypes[i];
+                buf.append((c == null) ? "null" : c.getName());
+            }
+        }
+        buf.append(")");
+        return buf.toString();
+    }
+
+    /**
+     * {@code s} class是否是{@code c} class的父类或接口
+     * 一般用于匹配方法
+     * @return  true表示{@code s} class是{@code c} class的父类或接口
+     */
+    public static boolean isClassArrayMatch(Class<?>[] s, Class<?>[] c) {
+        if (s == null) {
+            return c == null || c.length == 0;
+        }
+
+        if (c == null) {
+            return s.length == 0;
+        }
+
+        if (s.length != c.length) {
+            return false;
+        }
+
+        for (int i = 0; i < s.length; i++) {
+            if (!s[i].isAssignableFrom(c[i])) {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     /**
@@ -206,7 +322,6 @@ public class ClassUtils {
     /**
      * 获取某个类的所有子类, 但不包括该类
      */
-    @SuppressWarnings("unchecked")
     public static <T> Set<Class<? extends T>> getSubClass(String packageName, Class<T> parent, boolean includeJar) {
         return getSubClass(packageName, parent, new ScanOptions().includeJar(includeJar));
     }
@@ -223,7 +338,6 @@ public class ClassUtils {
     /**
      * 获取出现某注解的所有类, 包括抽象类和接口
      */
-    @SuppressWarnings("unchecked")
     public static <T> Set<Class<? extends T>> getAnnotationedClass(String packageName, Class<T> annotationClass, boolean includeJar) {
         return getAnnotationedClass(packageName, annotationClass, new ScanOptions().includeJar(includeJar));
     }
@@ -319,8 +433,8 @@ public class ClassUtils {
                                 }
                                 return null;
                             })
-                            .filter(claxx -> !Objects.isNull(claxx))
-                            .filter(claxx -> matcher.match(c, claxx)).collect(Collectors.toSet());
+                            .filter(ic -> !Objects.isNull(ic))
+                            .filter(ic -> matcher.match(c, ic)).collect(Collectors.toSet());
                     subClasses.addAll(Sets.newHashSet(classes));
                 } else if (options.includeJar && "jar".equals(url.getProtocol())) {
                     JarURLConnection jarURLConnection = (JarURLConnection) url.openConnection();
@@ -347,9 +461,9 @@ public class ClassUtils {
                         className = className.substring(0, entryName.lastIndexOf(".class"));
 
                         try {
-                            Class<T> claxx = (Class<T>) contextClassLoader.loadClass(className);
-                            if (matcher.match(c, claxx)) {
-                                subClasses.add(claxx);
+                            Class<T> type = (Class<T>) contextClassLoader.loadClass(className);
+                            if (matcher.match(c, type)) {
+                                subClasses.add(type);
                             }
                         } catch (ClassNotFoundException e) {
                             ExceptionUtils.throwExt(e);
@@ -483,63 +597,63 @@ public class ClassUtils {
         return setterMethod(field.getDeclaringClass(), field);
     }
 
-    public static List<Field> getAllFields(Class<?> claxx) {
-        return getFields(claxx, Object.class);
+    public static List<Field> getAllFields(Class<?> type) {
+        return getFields(type, Object.class);
     }
 
     /**
-     * 获取claxx -> parent的所有field
+     * 获取{@code type} -> parent的所有field
      * field顺序, 子类 -> 父类 -> 父父类
      */
-    public static List<Field> getFields(Class<?> claxx, Class<?> parent) {
-        if (claxx == null || parent == null) {
+    public static List<Field> getFields(Class<?> type, Class<?> parent) {
+        if (type == null || parent == null) {
             return Collections.emptyList();
         }
 
         List<Field> fields = new ArrayList<>();
-        while (!claxx.equals(parent)) {
-            Collections.addAll(fields, claxx.getDeclaredFields());
-            claxx = claxx.getSuperclass();
+        while (!type.equals(parent)) {
+            Collections.addAll(fields, type.getDeclaredFields());
+            type = type.getSuperclass();
         }
         return fields;
     }
 
-    public static List<Method> getAllMethods(Class<?> claxx) {
-        return getMethods(claxx, Object.class);
+    public static List<Method> getAllMethods(Class<?> type) {
+        return getMethods(type, Object.class);
     }
 
     /**
-     * 获取claxx -> parent的所有method
+     * 获取{@code type} -> parent的所有method
      * method顺序, 子类 -> 父类 -> 父父类
      */
-    public static List<Method> getMethods(Class<?> claxx, Class<?> parent) {
-        if (claxx == null || parent == null) {
+    public static List<Method> getMethods(Class<?> type, Class<?> parent) {
+        if (type == null || parent == null) {
             return Collections.emptyList();
         }
 
         List<Method> methods = new ArrayList<>();
-        while (!claxx.equals(parent)) {
-            Collections.addAll(methods, claxx.getDeclaredMethods());
-            claxx = claxx.getSuperclass();
+        while (!type.equals(parent)) {
+            Collections.addAll(methods, type.getDeclaredMethods());
+            type = type.getSuperclass();
         }
         return methods;
     }
 
-    public static List<Class<?>> getAllClasses(Class<?> claxx) {
-        return getClasses(claxx, Object.class);
+    public static List<Class<?>> getAllClasses(Class<?> type) {
+        return getClasses(type, Object.class);
     }
 
     /**
-     * 获取claxx -> parent的所有class
+     * 获取{@code type} -> parent的所有class
      */
-    public static List<Class<?>> getClasses(Class<?> claxx, Class<?> parent) {
-        if (!parent.isAssignableFrom(claxx)) {
-            throw new IllegalStateException(String.format("%s is not super class of %s", parent.getName(), claxx.getName()));
+    public static List<Class<?>> getClasses(Class<?> type, Class<?> parent) {
+        if (!parent.isAssignableFrom(type)) {
+            throw new IllegalStateException(String.format("%s is not super class of %s", parent.getName(), type.getName()));
         }
         List<Class<?>> classes = new ArrayList<>();
-        while (Objects.nonNull(claxx) && !claxx.equals(parent)) {
-            classes.add(claxx);
-            claxx = claxx.getSuperclass();
+        while (Objects.nonNull(type) && !type.equals(parent)) {
+            classes.add(type);
+            type = type.getSuperclass();
         }
         return classes;
     }
@@ -547,43 +661,43 @@ public class ClassUtils {
     /**
      * 获取默认值
      */
-    public static Object getDefaultValue(Class<?> claxx) {
-        if (claxx.isPrimitive()) {
-            if (Boolean.TYPE.equals(claxx)) {
+    public static Object getDefaultValue(Class<?> type) {
+        if (type.isPrimitive()) {
+            if (Boolean.TYPE.equals(type)) {
                 return false;
-            } else if (Byte.TYPE.equals(claxx)) {
+            } else if (Byte.TYPE.equals(type)) {
                 return 0;
-            } else if (Character.TYPE.equals(claxx)) {
+            } else if (Character.TYPE.equals(type)) {
                 return "";
-            } else if (Short.TYPE.equals(claxx)) {
+            } else if (Short.TYPE.equals(type)) {
                 return 0;
-            } else if (Integer.TYPE.equals(claxx)) {
+            } else if (Integer.TYPE.equals(type)) {
                 return 0;
-            } else if (Long.TYPE.equals(claxx)) {
+            } else if (Long.TYPE.equals(type)) {
                 return 0L;
-            } else if (Float.TYPE.equals(claxx)) {
+            } else if (Float.TYPE.equals(type)) {
                 return 0.0F;
-            } else if (Double.TYPE.equals(claxx)) {
+            } else if (Double.TYPE.equals(type)) {
                 return 0.0D;
             }
         } else {
-            if (String.class.equals(claxx)) {
+            if (String.class.equals(type)) {
                 return "";
-            } else if (Boolean.class.equals(claxx)) {
+            } else if (Boolean.class.equals(type)) {
                 return false;
-            } else if (Byte.class.equals(claxx)) {
+            } else if (Byte.class.equals(type)) {
                 return 0;
-            } else if (Character.class.equals(claxx)) {
+            } else if (Character.class.equals(type)) {
                 return "";
-            } else if (Short.class.equals(claxx)) {
+            } else if (Short.class.equals(type)) {
                 return 0;
-            } else if (Integer.class.equals(claxx)) {
+            } else if (Integer.class.equals(type)) {
                 return 0;
-            } else if (Long.class.equals(claxx)) {
+            } else if (Long.class.equals(type)) {
                 return 0L;
-            } else if (Float.class.equals(claxx)) {
+            } else if (Float.class.equals(type)) {
                 return 0.0F;
-            } else if (Double.class.equals(claxx)) {
+            } else if (Double.class.equals(type)) {
                 return 0.0D;
             }
         }
@@ -593,38 +707,38 @@ public class ClassUtils {
     /**
      * bytes -> 基础类型
      */
-    public static <T> T convertBytes2PrimitiveObj(Class<T> claxx, byte[] bytes) {
+    public static <T> T convertBytes2PrimitiveObj(Class<T> type, byte[] bytes) {
         if (bytes == null || bytes.length <= 0) {
             return null;
         }
 
         String strValue = new String(bytes);
-        return convertStr2PrimitiveObj(claxx, strValue);
+        return convertStr2PrimitiveObj(type, strValue);
     }
 
     /**
      * string -> 基础类型
      */
     @SuppressWarnings("unchecked")
-    public static <T> T convertStr2PrimitiveObj(Class<T> claxx, String strValue) {
+    public static <T> T convertStr2PrimitiveObj(Class<T> type, String strValue) {
         if (StringUtils.isNotBlank(strValue)) {
-            if (String.class.equals(claxx)) {
+            if (String.class.equals(type)) {
                 return (T) strValue;
-            } else if (Boolean.class.equals(claxx) || Boolean.TYPE.equals(claxx)) {
+            } else if (Boolean.class.equals(type) || Boolean.TYPE.equals(type)) {
                 return (T) Boolean.valueOf(strValue);
-            } else if (Byte.class.equals(claxx) || Byte.TYPE.equals(claxx)) {
+            } else if (Byte.class.equals(type) || Byte.TYPE.equals(type)) {
                 return (T) Byte.valueOf(strValue);
-            } else if (Character.class.equals(claxx) || Character.TYPE.equals(claxx)) {
+            } else if (Character.class.equals(type) || Character.TYPE.equals(type)) {
                 return (T) strValue;
-            } else if (Short.class.equals(claxx) || Short.TYPE.equals(claxx)) {
+            } else if (Short.class.equals(type) || Short.TYPE.equals(type)) {
                 return (T) Short.valueOf(strValue);
-            } else if (Integer.class.equals(claxx) || Integer.TYPE.equals(claxx)) {
+            } else if (Integer.class.equals(type) || Integer.TYPE.equals(type)) {
                 return (T) Integer.valueOf(strValue);
-            } else if (Long.class.equals(claxx) || Long.TYPE.equals(claxx)) {
+            } else if (Long.class.equals(type) || Long.TYPE.equals(type)) {
                 return (T) Long.valueOf(strValue);
-            } else if (Float.class.equals(claxx) || Float.TYPE.equals(claxx)) {
+            } else if (Float.class.equals(type) || Float.TYPE.equals(type)) {
                 return (T) Float.valueOf(strValue);
-            } else if (Double.class.equals(claxx) || Double.TYPE.equals(claxx)) {
+            } else if (Double.class.equals(type) || Double.TYPE.equals(type)) {
                 return (T) Double.valueOf(strValue);
             }
         }
@@ -635,39 +749,40 @@ public class ClassUtils {
     /**
      * @return 是否基础类型, 包含包装类
      */
-    public static boolean isPrimitiveType(Class<?> claxx) {
-        return String.class.equals(claxx) ||
-                Boolean.class.equals(claxx) || Boolean.TYPE.equals(claxx) ||
-                Byte.class.equals(claxx) || Byte.TYPE.equals(claxx) ||
-                Character.class.equals(claxx) || Character.TYPE.equals(claxx) ||
-                Short.class.equals(claxx) || Short.TYPE.equals(claxx) ||
-                Integer.class.equals(claxx) || Integer.TYPE.equals(claxx) ||
-                Long.class.equals(claxx) || Long.TYPE.equals(claxx) ||
-                Float.class.equals(claxx) || Float.TYPE.equals(claxx) ||
-                Double.class.equals(claxx) || Double.TYPE.equals(claxx);
+    public static boolean isPrimitiveType(Class<?> type) {
+        return String.class.equals(type) ||
+                Boolean.class.equals(type) || Boolean.TYPE.equals(type) ||
+                Byte.class.equals(type) || Byte.TYPE.equals(type) ||
+                Character.class.equals(type) || Character.TYPE.equals(type) ||
+                Short.class.equals(type) || Short.TYPE.equals(type) ||
+                Integer.class.equals(type) || Integer.TYPE.equals(type) ||
+                Long.class.equals(type) || Long.TYPE.equals(type) ||
+                Float.class.equals(type) || Float.TYPE.equals(type) ||
+                Double.class.equals(type) || Double.TYPE.equals(type);
     }
 
     /**
      * @return 是否是集合类型orMap类型
      */
-    public static boolean isCollectionOrMapType(Class<?> claxx) {
-        return Collection.class.isAssignableFrom(claxx) ||
-                Map.class.isAssignableFrom(claxx) ||
-                claxx.isArray();
+    public static boolean isCollectionOrMapType(Class<?> type) {
+        return Collection.class.isAssignableFrom(type) ||
+                Map.class.isAssignableFrom(type) ||
+                type.isArray();
     }
 
     /**
      * @return 该类实现的接口是否有指定注解标识
      */
+    @SuppressWarnings({"unchecked", "rawtypes"})
     public static boolean isInterfaceAnnotationPresent(Object o, Class<?> annotation) {
-        Class<?> claxx = o.getClass();
-        while (claxx != null) {
-            for (Class interfaceClass : claxx.getInterfaces()) {
+        Class<?> type = o.getClass();
+        while (type != null) {
+            for (Class interfaceClass : type.getInterfaces()) {
                 if (interfaceClass.isAnnotationPresent(annotation)) {
                     return true;
                 }
             }
-            claxx = claxx.getSuperclass();
+            type = type.getSuperclass();
         }
 
         return false;
@@ -719,8 +834,8 @@ public class ClassUtils {
      * 获取类泛型具体实现类型
      * 由于类型擦除, 获取不了本类的泛型类型参数具体类型, 但其保存的父类的泛型类型参数具体类型, 所以可以获取父类的泛型类型参数具体类型
      */
-    public static List<Type> getSuperClassGenericActualTypes(Class<?> claxx) {
-        Type genericSuperclass = claxx.getGenericSuperclass();
+    public static List<Type> getSuperClassGenericActualTypes(Class<?> type) {
+        Type genericSuperclass = type.getGenericSuperclass();
         return new ArrayList<>(Arrays.asList(((ParameterizedType) genericSuperclass).getActualTypeArguments()));
     }
 
@@ -728,12 +843,12 @@ public class ClassUtils {
      * 继承的父类
      * 获取类泛型raw type(如果该类也是带泛型的, 则会丢掉泛型信息)
      */
-    public static List<Class<?>> getSuperClassGenericRawTypes(Class<?> claxx) {
-        return getSuperClassGenericActualTypes(claxx).stream().map(type -> {
-            if (type instanceof ParameterizedType) {
-                return (Class<?>) ((ParameterizedType) type).getRawType();
+    public static List<Class<?>> getSuperClassGenericRawTypes(Class<?> type) {
+        return getSuperClassGenericActualTypes(type).stream().map(t -> {
+            if (t instanceof ParameterizedType) {
+                return (Class<?>) ((ParameterizedType) t).getRawType();
             } else {
-                return ((Class<?>) type);
+                return ((Class<?>) t);
             }
         }).collect(Collectors.toList());
     }
@@ -743,16 +858,16 @@ public class ClassUtils {
      * 获取指定接口的泛型具体实现类型
      * 由于类型擦除, 获取不了本类的泛型类型参数具体类型, 但其保存的父接口的泛型类型参数具体类型, 所以可以获取父接口的泛型类型参数具体类型
      *
-     * @param claxx          接口实现类
+     * @param type          接口实现类
      * @param interfaceClass 指定接口
      */
-    public static List<Type> getSuperInterfacesGenericActualTypes(Class<?> interfaceClass, Class<?> claxx) {
-        if (!interfaceClass.isAssignableFrom(claxx)) {
+    public static List<Type> getSuperInterfacesGenericActualTypes(Class<?> interfaceClass, Class<?> type) {
+        if (!interfaceClass.isAssignableFrom(type)) {
             //非实现类
             return Collections.emptyList();
         }
 
-        Type target = claxx;
+        Type target = type;
         while (!Object.class.equals(target)) {
             //缓存泛型参数名字以及类型的对应关系
             Map<String, Type> paramName2Type = new HashMap<>();
@@ -879,15 +994,15 @@ public class ClassUtils {
      * 实现的接口
      * 获取指定接口的泛型raw type(如果该类也是带泛型的, 则会丢掉泛型信息)
      *
-     * @param claxx          接口实现类
+     * @param type          接口实现类
      * @param interfaceClass 指定接口
      */
-    public static List<Class<?>> getSuperInterfacesGenericRawTypes(Class<?> interfaceClass, Class<?> claxx) {
-        return getSuperInterfacesGenericActualTypes(interfaceClass, claxx).stream().map(type -> {
-            if (type instanceof ParameterizedType) {
-                return (Class<?>) ((ParameterizedType) type).getRawType();
+    public static List<Class<?>> getSuperInterfacesGenericRawTypes(Class<?> interfaceClass, Class<?> type) {
+        return getSuperInterfacesGenericActualTypes(interfaceClass, type).stream().map(t -> {
+            if (t instanceof ParameterizedType) {
+                return (Class<?>) ((ParameterizedType) t).getRawType();
             } else {
-                return ((Class<?>) type);
+                return ((Class<?>) t);
             }
         }).collect(Collectors.toList());
     }
@@ -1070,28 +1185,28 @@ public class ClassUtils {
     /**
      * 基础类型封箱
      */
-    public static String primitivePackage(Class<?> claxx, String code) {
+    public static String primitivePackage(Class<?> type, String code) {
         StringBuilder sb = new StringBuilder();
         // 需要手动装箱, 不然编译会报错
-        if (claxx.isPrimitive()) {
-            if (Integer.TYPE.equals(claxx)) {
+        if (type.isPrimitive()) {
+            if (Integer.TYPE.equals(type)) {
                 sb.append("Integer.valueOf(");
-            } else if (Short.TYPE.equals(claxx)) {
+            } else if (Short.TYPE.equals(type)) {
                 sb.append("Short.valueOf(");
-            } else if (Byte.TYPE.equals(claxx)) {
+            } else if (Byte.TYPE.equals(type)) {
                 sb.append("Byte.valueOf(");
-            } else if (Long.TYPE.equals(claxx)) {
+            } else if (Long.TYPE.equals(type)) {
                 sb.append("Long.valueOf(");
-            } else if (Float.TYPE.equals(claxx)) {
+            } else if (Float.TYPE.equals(type)) {
                 sb.append("Float.valueOf(");
-            } else if (Double.TYPE.equals(claxx)) {
+            } else if (Double.TYPE.equals(type)) {
                 sb.append("Double.valueOf(");
-            } else if (Character.TYPE.equals(claxx)) {
+            } else if (Character.TYPE.equals(type)) {
                 sb.append("Character.valueOf(");
             }
         }
         sb.append(code);
-        if (claxx.isPrimitive() && !Void.TYPE.equals(claxx)) {
+        if (type.isPrimitive() && !Void.TYPE.equals(type)) {
             sb.append(")");
         }
         return sb.toString();
@@ -1100,24 +1215,24 @@ public class ClassUtils {
     /**
      * 基础类型拆箱
      */
-    public static String primitiveUnpackage(Class<?> claxx, String code) {
+    public static String primitiveUnpackage(Class<?> type, String code) {
         //需要手动拆箱, 不然编译会报错
-        if (Integer.TYPE.equals(claxx)) {
+        if (Integer.TYPE.equals(type)) {
             return "((" + Integer.class.getSimpleName() + ")" + code + ").intValue()";
-        } else if (Short.TYPE.equals(claxx)) {
+        } else if (Short.TYPE.equals(type)) {
             return "((" + Short.class.getSimpleName() + ")" + code + ").shortValue()";
-        } else if (Byte.TYPE.equals(claxx)) {
+        } else if (Byte.TYPE.equals(type)) {
             return "((" + Byte.class.getSimpleName() + ")" + code + ").byteValue()";
-        } else if (Long.TYPE.equals(claxx)) {
+        } else if (Long.TYPE.equals(type)) {
             return "((" + Long.class.getSimpleName() + ")" + code + ").longValue()";
-        } else if (Float.TYPE.equals(claxx)) {
+        } else if (Float.TYPE.equals(type)) {
             return "((" + Float.class.getSimpleName() + ")" + code + ").floatValue()";
-        } else if (Double.TYPE.equals(claxx)) {
+        } else if (Double.TYPE.equals(type)) {
             return "((" + Double.class.getSimpleName() + ")" + code + ").doubleValue()";
-        } else if (Character.TYPE.equals(claxx)) {
+        } else if (Character.TYPE.equals(type)) {
             return "((" + Character.class.getSimpleName() + ")" + code + ").charValue()";
-        } else if (!Void.TYPE.equals(claxx)) {
-            return "(" + claxx.getName() + ")" + code;
+        } else if (!Void.TYPE.equals(type)) {
+            return "(" + type.getName() + ")" + code;
         }
         return code;
     }
