@@ -195,12 +195,12 @@ public class ReferenceCountedCache<K, V> {
      *
      * @param entry 缓存entry
      */
-    private void applyRemoveListener(Entry<K, V> entry) {
+    private void applyRemoveListener(K key, V value) {
         if (Objects.isNull(removeListener)) {
             return;
         }
 
-        removeListener.accept(entry.getKey(), entry.getValue());
+        removeListener.accept(key, value);
     }
 
     /**
@@ -215,10 +215,11 @@ public class ReferenceCountedCache<K, V> {
             return false;
         }
 
+        V value = entry.getValue();
         boolean release = entry.release();
 
         if (release) {
-            applyRemoveListener(entry);
+            applyRemoveListener(k, value);
         }
 
         return release;
@@ -235,8 +236,9 @@ public class ReferenceCountedCache<K, V> {
             return;
         }
 
+        V value = entry.getValue();
         entry.remove();
-        applyRemoveListener(entry);
+        applyRemoveListener(k, value);
     }
 
     /**
@@ -275,8 +277,10 @@ public class ReferenceCountedCache<K, V> {
         }
 
         for (Entry<K, V> entry : entries) {
+            K key = entry.getKey();
+            V value = entry.getValue();
             entry.remove();
-            applyRemoveListener(entry);
+            applyRemoveListener(key, value);
         }
     }
 
@@ -402,8 +406,7 @@ public class ReferenceCountedCache<K, V> {
         public synchronized boolean release() {
             if (--counter <= 0) {
                 //从链表移除
-                value = null;
-                remove0();
+                remove();
                 return true;
             } else {
                 return false;
@@ -415,6 +418,7 @@ public class ReferenceCountedCache<K, V> {
          */
         public synchronized void remove() {
             counter = 0;
+            value = null;
             remove0();
         }
 
