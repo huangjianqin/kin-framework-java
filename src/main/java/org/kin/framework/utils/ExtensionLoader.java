@@ -482,7 +482,7 @@ public final class ExtensionLoader<E> {
         if (Objects.nonNull(extensionMetaData)) {
             return extensionMetaData.getCode();
         }
-        return -1;
+        throw new ExtensionException(String.format("can not find extension named '%s'", name));
     }
     //-------------------------------------------------------------------------------------------------------------------
 
