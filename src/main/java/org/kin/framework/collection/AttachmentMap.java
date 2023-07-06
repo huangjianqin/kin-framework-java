@@ -26,33 +26,16 @@ public class AttachmentMap implements AttachmentSupport{
         this.attachments = new HashMap<>(other.attachments);
     }
 
-    /**
-     * 批量attach
-     *
-     * @param attachments attachments
-     */
     @Override
     public void attachMany(Map<String, ?> attachments) {
         this.attachments.putAll(attachments);
     }
 
-    /**
-     * 批量attach
-     *
-     * @param other attachments
-     */
     @Override
     public void attachMany(AttachmentMap other) {
         this.attachments.putAll(other.attachments);
     }
 
-    /**
-     * attach
-     *
-     * @param key attachment key
-     * @param obj attachment value
-     * @return this
-     */
     @SuppressWarnings("unchecked")
     @Nullable
     @Override
@@ -70,12 +53,6 @@ public class AttachmentMap implements AttachmentSupport{
         return attachments.containsKey(key);
     }
 
-    /**
-     * 获取attachment value
-     *
-     * @param key attachment key
-     * @return attachment value
-     */
     @SuppressWarnings("unchecked")
     @Nullable
     @Override
@@ -83,25 +60,12 @@ public class AttachmentMap implements AttachmentSupport{
         return (T) attachments.get(key);
     }
 
-    /**
-     * 获取attachment value, 如果不存在则取{@code defaultValue}
-     *
-     * @param key          attachment key
-     * @param defaultValue 默认attachment value
-     * @return attachment value
-     */
     @SuppressWarnings("unchecked")
     @Override
     public <T> T attachment(String key, T defaultValue) {
         return (T) attachments.getOrDefault(key, defaultValue);
     }
 
-    /**
-     * 移除attachment
-     *
-     * @param key attachment key
-     * @return attachment value if exists
-     */
     @SuppressWarnings("unchecked")
     @Nullable
     @Override
@@ -109,10 +73,6 @@ public class AttachmentMap implements AttachmentSupport{
         return (T)attachments.remove(key);
     }
 
-    /**
-     * 返回所有attachment
-     * @return  所有attachment
-     */
     @Override
     public Map<String, Object> attachments(){
         return attachments;
