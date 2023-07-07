@@ -330,12 +330,30 @@ public class NetUtils {
     }
 
     /**
-     * 获取local host address
+     * 自适应返回local host address, 如果允许ipv6, 则返回{@link #LOCALHOST6}, 否则{@link #LOCALHOST4}
      *
      * @return local host address
      */
     public static InetAddress getLocalhost() {
         return LOCALHOST;
+    }
+
+    /**
+     * 返回ipv4 local host address
+     *
+     * @return ipv4 local host address
+     */
+    public static InetAddress getLocalhost4() {
+        return LOCALHOST4;
+    }
+
+    /**
+     * 返回ipv6 local host address
+     *
+     * @return ipv6 local host address
+     */
+    public static InetAddress getLocalhost6() {
+        return LOCALHOST6;
     }
 
     /**
@@ -348,12 +366,30 @@ public class NetUtils {
     }
 
     /**
-     * 返回localhost address ip address
+     * 自适应返回localhost address ip address, 如果允许ipv6, 则返回{@link #LOCALHOST6}, 否则{@link #LOCALHOST4}
      *
      * @return localhost address ip address
      */
     public static String getLocalhostIp() {
         return getLocalhost().getHostAddress();
+    }
+
+    /**
+     * 返回ipv4 local host ip address
+     *
+     * @return ipv4 local host ip address
+     */
+    public static String getLocalhost4Ip() {
+        return getLocalhost4().getHostAddress();
+    }
+
+    /**
+     * 返回ipv6 local host ip address
+     *
+     * @return ipv6 local host ip address
+     */
+    public static String getLocalhost6Ip() {
+        return getLocalhost6().getHostAddress();
     }
 
     /**
@@ -366,12 +402,30 @@ public class NetUtils {
     }
 
     /**
-     * 返回localhost address ip name
+     * 自适应返回localhost address ip name, 如果允许ipv6, 则返回{@link #LOCALHOST6}, 否则{@link #LOCALHOST4}
      *
      * @return localhost address ip name
      */
     public static String getLocalhostName() {
         return getLocalhost().getHostName();
+    }
+
+    /**
+     * 返回ipv4 localhost address ip name
+     *
+     * @return ipv4 localhost address ip name
+     */
+    public static String getLocalhost4Name() {
+        return getLocalhost4().getHostName();
+    }
+
+    /**
+     * 返回ipv6 localhost address ip name
+     *
+     * @return ipv6 localhost address ip name
+     */
+    public static String getLocalhost6Name() {
+        return getLocalhost6().getHostName();
     }
 
     /**
