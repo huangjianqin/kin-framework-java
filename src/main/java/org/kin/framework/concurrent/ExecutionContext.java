@@ -41,6 +41,7 @@ public class ExecutionContext implements ScheduledExecutorService {
 
         this.worker = worker;
         this.scheduler = ThreadPoolUtils.scheduledThreadPoolBuilder()
+                .metric()
                 .coreThreads(scheduleParallelism)
                 .threadFactory(schedulerFactory)
                 //默认future cancel时移除task queue, 稍微加大cpu消耗以及阻塞, 以减少堆内存消耗
@@ -64,6 +65,7 @@ public class ExecutionContext implements ScheduledExecutorService {
 
     public static ExecutionContext forkJoin(int parallelism, String workerNamePrefix, Thread.UncaughtExceptionHandler handler, int scheduleParallelism) {
         ForkJoinPool forkJoinPool = ThreadPoolUtils.forkJoinThreadPoolBuilder()
+                .metric()
                 .poolName(workerNamePrefix)
                 .parallelism(parallelism)
                 .threadFactory(new SimpleForkJoinWorkerThreadFactory(workerNamePrefix))
@@ -86,6 +88,7 @@ public class ExecutionContext implements ScheduledExecutorService {
 
     public static ExecutionContext asyncForkJoin(int parallelism, String workerNamePrefix, Thread.UncaughtExceptionHandler handler, int scheduleParallelism) {
         ForkJoinPool forkJoinPool = ThreadPoolUtils.forkJoinThreadPoolBuilder()
+                .metric()
                 .poolName(workerNamePrefix)
                 .parallelism(parallelism)
                 .threadFactory(new SimpleForkJoinWorkerThreadFactory(workerNamePrefix))
@@ -129,6 +132,7 @@ public class ExecutionContext implements ScheduledExecutorService {
 
     public static ExecutionContext cache(int coreParallelism, int maxParallelism, ThreadFactory workerThreadFactory, int scheduleParallelism, ThreadFactory schedulerFactory) {
         ThreadPoolExecutor threadPoolExecutor = ThreadPoolUtils.threadPoolBuilder()
+                .metric()
                 .coreThreads(coreParallelism)
                 .maximumThreads(maxParallelism)
                 .keepAlive(60L, TimeUnit.SECONDS)
@@ -180,6 +184,7 @@ public class ExecutionContext implements ScheduledExecutorService {
 
     public static ExecutionContext fix(int parallelism, int queue, ThreadFactory workerThreadFactory, int scheduleParallelism, ThreadFactory schedulerFactory) {
         ThreadPoolExecutor threadPoolExecutor = ThreadPoolUtils.threadPoolBuilder()
+                .metric()
                 .coreThreads(parallelism)
                 .maximumThreads(parallelism)
                 .keepAlive(60L, TimeUnit.SECONDS)
@@ -235,6 +240,7 @@ public class ExecutionContext implements ScheduledExecutorService {
      */
     public static ExecutionContext elastic(int coreParallelism, int maxParallelism, int queue, ThreadFactory workerThreadFactory, int scheduleParallelism, ThreadFactory schedulerFactory) {
         EagerThreadPoolExecutor eagerThreadPoolExecutor = ThreadPoolUtils.threadPoolBuilder()
+                .metric()
                 .coreThreads(coreParallelism)
                 .maximumThreads(maxParallelism)
                 .keepAlive(60L, TimeUnit.SECONDS)

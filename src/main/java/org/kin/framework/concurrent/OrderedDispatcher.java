@@ -22,13 +22,17 @@ public final class OrderedDispatcher<KEY, MSG> extends AbstractDispatcher<KEY, M
     private final Map<KEY, EventLoopReceiver<MSG>> receiverMap = new ConcurrentHashMap<>();
 
     public OrderedDispatcher(int parallelism) {
-        this(parallelism, "orderedEventDispatcher");
+        this(parallelism, "orderedDispatcher");
     }
 
     public OrderedDispatcher(int parallelism, String workerNamePrefix) {
-        super(ExecutionContext.elastic(parallelism, Math.min(parallelism, SysUtils.CPU_NUM * 10),
-                workerNamePrefix, parallelism / 2 + 1));
-        eventLoopGroup = new CachedOrderedEventLoopGroup(executionContext, OrderedEventLoop::new);
+        this(ExecutionContext.elastic(parallelism, Math.min(parallelism, SysUtils.CPU_NUM * 3),
+                workerNamePrefix, SysUtils.CPU_NUM / 2 + 1));
+    }
+
+    public OrderedDispatcher(ExecutionContext executionContext) {
+        super(executionContext);
+        eventLoopGroup = new CachedOrderedEventLoopGroup(super.executionContext, OrderedEventLoop::new);
     }
 
     @Override
