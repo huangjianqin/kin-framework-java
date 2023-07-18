@@ -4,8 +4,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.annotation.Nonnull;
-import java.util.Collections;
-import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.*;
 
@@ -17,19 +15,25 @@ import java.util.concurrent.*;
  * @author huangjianqin
  * @date 2022/5/20
  */
-public final class ThreadLessExecutor extends AbstractExecutorService {
+public final class ThreadLessExecutor{
     private static final Logger log = LoggerFactory.getLogger(ThreadLessExecutor.class);
 
     /** task queue */
     private final BlockingQueue<Runnable> queue = new LinkedBlockingQueue<>();
-    /** pending future */
-    private volatile CompletableFuture<?> waitingFuture;
+    /** waiting future */
+    private final CompletableFuture<?> waitingFuture;
+    /** internal lock */
+    private final Object lock = new Object();
     /** executor是否已接受callback task(即future完成)并执行完{@link #queue}中缓存的task */
-    private boolean finished = false;
+    private volatile boolean finished = false;
     /** 是否正在等待callback task */
     private volatile boolean waiting = true;
     /** 等待callback task的线程 */
     private Thread waitingThread;
+
+    public ThreadLessExecutor(@Nonnull CompletableFuture<?> waitingFuture) {
+        this.waitingFuture = waitingFuture;
+    }
 
     /**
      * 等待直到有task进入queue, 然后所有queue缓存的task都会被执行
@@ -42,7 +46,7 @@ public final class ThreadLessExecutor extends AbstractExecutorService {
 
         //虽然waitAndDrain()并不会存在多线程问题, 但是queue里面的task的执行顺序就无法保证
         //所以此处限制仅仅允许一条线程来等待callback task
-        synchronized (this) {
+        synchronized (lock) {
             if(Objects.isNull(waitingThread)){
                 waitingThread = Thread.currentThread();
             }
@@ -60,7 +64,7 @@ public final class ThreadLessExecutor extends AbstractExecutorService {
             throw e;
         }
 
-        synchronized (this) {
+        synchronized (lock) {
             //解除waiting状态
             setWaiting(false);
             //执行callback task
@@ -78,68 +82,37 @@ public final class ThreadLessExecutor extends AbstractExecutorService {
         setFinished(true);
     }
 
-    @Override
+    /**
+     * future finish and then execute callback {@code runnable}
+     * @param runnable  callback
+     */
     public void execute(@Nonnull Runnable runnable) {
         runnable = new RunnableWrapper(runnable);
 
-        synchronized (this) {
+        synchronized (lock) {
             if (!isWaiting()) {
                 //非waiting状态, 直接执行
                 runnable.run();
-                return;
             }
-
-            //等待callback task后再执行
-            queue.add(runnable);
+            else{
+                //等待callback task后再执行
+                queue.add(runnable);
+            }
         }
     }
 
     /**
      * 异常callback, 终止{@link #waitAndDrain()}的阻塞并唤醒, 避免无休止的等待
      */
-    public void notifyReturn(Throwable t) {
+    public void notifyExceptionally(Throwable t) {
         execute(() -> {
-            if (Objects.nonNull(waitingFuture)) {
+            if (!waitingFuture.isDone()) {
                 waitingFuture.completeExceptionally(t);
             }
         });
     }
 
-    @Override
-    public void shutdown() {
-        shutdownNow();
-    }
-
-    @Override
-    public List<Runnable> shutdownNow() {
-        notifyReturn(new IllegalStateException("executor is going to be stopped without handle callback task"));
-        return Collections.emptyList();
-    }
-
-    @Override
-    public boolean isShutdown() {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public boolean isTerminated() {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public boolean awaitTermination(long timeout, @Nonnull TimeUnit unit) {
-        throw new UnsupportedOperationException();
-    }
-
     //setter && getter
-    public CompletableFuture<?> getWaitingFuture() {
-        return waitingFuture;
-    }
-
-    public void setWaitingFuture(CompletableFuture<?> waitingFuture) {
-        this.waitingFuture = waitingFuture;
-    }
-
     private boolean isFinished() {
         return finished;
     }
