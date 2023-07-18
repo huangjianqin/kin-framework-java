@@ -89,15 +89,13 @@ public final class ThreadLessExecutor{
     public void execute(@Nonnull Runnable runnable) {
         runnable = new RunnableWrapper(runnable);
 
-        synchronized (lock) {
-            if (!isWaiting()) {
-                //非waiting状态, 直接执行
-                runnable.run();
-            }
-            else{
-                //等待callback task后再执行
-                queue.add(runnable);
-            }
+        if (!isWaiting()) {
+            //非waiting状态, 直接执行
+            runnable.run();
+        }
+        else{
+            //等待callback task后再执行
+            queue.add(runnable);
         }
     }
 
@@ -113,7 +111,7 @@ public final class ThreadLessExecutor{
     }
 
     //setter && getter
-    private boolean isFinished() {
+    public boolean isFinished() {
         return finished;
     }
 
@@ -122,7 +120,9 @@ public final class ThreadLessExecutor{
     }
 
     public boolean isWaiting() {
-        return waiting;
+        synchronized (lock) {
+            return waiting;
+        }
     }
 
     private void setWaiting(boolean waiting) {
