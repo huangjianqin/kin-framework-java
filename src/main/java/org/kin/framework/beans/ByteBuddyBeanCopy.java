@@ -15,7 +15,6 @@ import java.beans.PropertyDescriptor;
 import java.lang.reflect.Method;
 import java.util.Objects;
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.TimeUnit;
 
 /**
  * 基于ByteBuddy字节码增强后的bean copy properties工具类
@@ -27,11 +26,10 @@ import java.util.concurrent.TimeUnit;
 public final class ByteBuddyBeanCopy extends PolymorphicCopy {
     public static final ByteBuddyBeanCopy INSTANCE = new ByteBuddyBeanCopy();
 
-    /** soft reference && 5 min ttl */
+    /** soft reference */
     private static final Cache<Integer, Copy> COPY_CACHE =
             CacheBuilder.newBuilder()
                     .softValues()
-                    .expireAfterAccess(5, TimeUnit.MINUTES)
                     .build();
     /** {@link Copy#copyProperties(Object, Object)}source参数下标 */
     private static final int SOURCE_ARG_INDEX = 0;

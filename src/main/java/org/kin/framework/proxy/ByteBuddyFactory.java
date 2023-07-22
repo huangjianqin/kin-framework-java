@@ -1,5 +1,7 @@
 package org.kin.framework.proxy;
 
+import com.google.common.cache.Cache;
+import com.google.common.cache.CacheBuilder;
 import net.bytebuddy.ByteBuddy;
 import net.bytebuddy.ClassFileVersion;
 import net.bytebuddy.description.type.TypeDefinition;
@@ -18,6 +20,7 @@ import java.lang.reflect.Modifier;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.ExecutionException;
 
 /**
  * 利用byte buddy字节码技术增强代理类 调用速度更快
@@ -33,6 +36,15 @@ public final class ByteBuddyFactory implements ProxyFactory {
     /** 代理类中, 实现代理方法(Method实例)默认字段名 */
     public static final String DEFAULT_METHOD_FIELD_NAME = "method";
 
+    /** {@link ProxyInvoker} cache */
+    private final Cache<Integer, Class<?>> PROXY_INVOKER_CACHE = CacheBuilder.newBuilder()
+            .softValues()
+            .build();
+    /** enhanced class cache */
+    private final Cache<Integer, Class<?>> ENHANCED_CLASS_CACHE = CacheBuilder.newBuilder()
+            .softValues()
+            .build();
+
     private ByteBuddyFactory() {
     }
 
@@ -47,45 +59,50 @@ public final class ByteBuddyFactory implements ProxyFactory {
         Method target = definition.getMethod();
         String packageName = serviceClass.getPackage().getName();
         String className = packageName.concat(".").concat(serviceClass.getSimpleName().concat("$").concat(target.getName())).concat("$ByteBuddyProxy");
-        ;
         try {
-            //设置泛型ProxyInvoker接口
-            List<TypeDefinition> genericArgDefinitions = Collections.singletonList(new TypeDescription.ForLoadedType(serviceClass));
-            TypeDescription.Generic generic = Optional.ofNullable(ProxyInvoker.class.getDeclaringClass())
-                    .map(TypeDefinition.Sort::describe)
-                    .orElse(null);
-            TypeDefinition proxyType = TypeDescription.Generic.Builder.parameterizedType(
-                    new TypeDescription.ForLoadedType(ProxyInvoker.class)
-                    , generic, genericArgDefinitions).build();
+            Class<?> invokerClass = PROXY_INVOKER_CACHE.get(className.hashCode(), () -> {
+                //设置泛型ProxyInvoker接口
+                List<TypeDefinition> genericArgDefinitions = Collections.singletonList(new TypeDescription.ForLoadedType(serviceClass));
+                TypeDescription.Generic generic = Optional.ofNullable(ProxyInvoker.class.getDeclaringClass())
+                        .map(TypeDefinition.Sort::describe)
+                        .orElse(null);
+                TypeDefinition proxyType = TypeDescription.Generic.Builder.parameterizedType(
+                        new TypeDescription.ForLoadedType(ProxyInvoker.class)
+                        , generic, genericArgDefinitions).build();
 
-            return (ProxyInvoker<T>) new ByteBuddy(ClassFileVersion.ofThisVm(ClassFileVersion.JAVA_V8))
-                    .subclass(proxyType)
-                    .name(className)
-                    //定义field
-                    .defineField(DEFAULT_SERVICE_FIELD_NAME, serviceClass, Modifier.PRIVATE + Modifier.FINAL)
-                    .defineField(DEFAULT_METHOD_FIELD_NAME, Method.class, Modifier.PRIVATE + Modifier.FINAL)
-                    //定义constructor
-                    .defineConstructor(Modifier.PUBLIC)
-                    .withParameters(serviceClass, Method.class)
-                    .intercept(MethodCall.invoke(Object.class.getDeclaredConstructor())
-                            .andThen(FieldAccessor.ofField(DEFAULT_SERVICE_FIELD_NAME).setsArgumentAt(0))
-                            .andThen(FieldAccessor.ofField(DEFAULT_METHOD_FIELD_NAME).setsArgumentAt(1)))
-                    //定义方法, 与ProxyInvoker接口方法一致
-                    .method(ElementMatchers.named("getProxyObj"))
-                    .intercept(FieldAccessor.ofField(DEFAULT_SERVICE_FIELD_NAME))
-                    .method(ElementMatchers.named("getMethod"))
-                    .intercept(FieldAccessor.ofField(DEFAULT_METHOD_FIELD_NAME))
-                    .method(ElementMatchers.named("invoke"))
-                    .intercept(MethodCall.invoke(target)
-                            .onField(DEFAULT_SERVICE_FIELD_NAME)
-                            .withArgumentArrayElements(0)
-                            .withAssigner(Assigner.DEFAULT, Assigner.Typing.DYNAMIC))
-                    .make()
-                    .load(SysUtils.getClassLoader(ProxyInvoker.class))
-                    .getLoaded()
+
+                return new ByteBuddy(ClassFileVersion.ofThisVm(ClassFileVersion.JAVA_V8))
+                        .subclass(proxyType)
+                        .name(className)
+                        //定义field
+                        .defineField(DEFAULT_SERVICE_FIELD_NAME, serviceClass, Modifier.PRIVATE + Modifier.FINAL)
+                        .defineField(DEFAULT_METHOD_FIELD_NAME, Method.class, Modifier.PRIVATE + Modifier.FINAL)
+                        //定义constructor
+                        .defineConstructor(Modifier.PUBLIC)
+                        .withParameters(serviceClass, Method.class)
+                        .intercept(MethodCall.invoke(Object.class.getDeclaredConstructor())
+                                .andThen(FieldAccessor.ofField(DEFAULT_SERVICE_FIELD_NAME).setsArgumentAt(0))
+                                .andThen(FieldAccessor.ofField(DEFAULT_METHOD_FIELD_NAME).setsArgumentAt(1)))
+                        //定义方法, 与ProxyInvoker接口方法一致
+                        .method(ElementMatchers.named("getProxyObj"))
+                        .intercept(FieldAccessor.ofField(DEFAULT_SERVICE_FIELD_NAME))
+                        .method(ElementMatchers.named("getMethod"))
+                        .intercept(FieldAccessor.ofField(DEFAULT_METHOD_FIELD_NAME))
+                        .method(ElementMatchers.named("invoke"))
+                        .intercept(MethodCall.invoke(target)
+                                .onField(DEFAULT_SERVICE_FIELD_NAME)
+                                .withArgumentArrayElements(0)
+                                .withAssigner(Assigner.DEFAULT, Assigner.Typing.DYNAMIC))
+                        .make()
+                        .load(SysUtils.getClassLoader(ProxyInvoker.class))
+                        .getLoaded();
+            });
+
+            return (ProxyInvoker<T>) invokerClass
                     .getConstructor(serviceClass, target.getClass())
                     .newInstance(service, target);
-        } catch (InstantiationException | IllegalAccessException | InvocationTargetException | NoSuchMethodException e) {
+        } catch (InstantiationException | IllegalAccessException | InvocationTargetException |
+                 NoSuchMethodException | ExecutionException e) {
             ExceptionUtils.throwExt(e);
         }
 
@@ -111,57 +128,61 @@ public final class ByteBuddyFactory implements ProxyFactory {
 
         String proxyClassName = packageName.concat(".").concat(interfaceClass.getSimpleName()).concat("$ByteBuddyProxy");
         try {
-            ByteBuddy byteBuddy = new ByteBuddy(ClassFileVersion.ofThisVm(ClassFileVersion.JAVA_V8));
-            Class<?> supperClass;
-            DynamicType.Builder<P> builder;
-            if (interfaceClass.isInterface()) {
-                supperClass = Object.class;
-                builder = (DynamicType.Builder<P>) byteBuddy.subclass(supperClass).implement(interfaceClass);
-            } else {
-                supperClass = interfaceClass;
-                builder = byteBuddy.subclass(interfaceClass);
-            }
-
-            builder = builder.name(proxyClassName)
-                    //定义field
-                    .defineField(DEFAULT_SERVICE_FIELD_NAME, serviceClass, Modifier.PRIVATE + Modifier.FINAL)
-                    //定义constructor
-                    .defineConstructor(Modifier.PUBLIC)
-                    .withParameters(serviceClass)
-                    //只适用于父类有无参构造器
-                    .intercept(MethodCall.invoke(supperClass.getDeclaredConstructor())
-                            .andThen(FieldAccessor.ofField(DEFAULT_SERVICE_FIELD_NAME).setsArgumentAt(0)));
-
-            for (Method method : interfaceClass.getMethods()) {
-                if (Modifier.isFinal(method.getModifiers())) {
-                    //跳过final 方法
-                    continue;
+            Class<?> proxyClass = ENHANCED_CLASS_CACHE.get(proxyClassName.hashCode(), () -> {
+                ByteBuddy byteBuddy = new ByteBuddy(ClassFileVersion.ofThisVm(ClassFileVersion.JAVA_V8));
+                Class<?> supperClass;
+                DynamicType.Builder<P> builder;
+                if (interfaceClass.isInterface()) {
+                    supperClass = Object.class;
+                    builder = (DynamicType.Builder<P>) byteBuddy.subclass(supperClass).implement(interfaceClass);
+                } else {
+                    supperClass = interfaceClass;
+                    builder = byteBuddy.subclass(interfaceClass);
                 }
 
-                if (method.getDeclaringClass().equals(Object.class)) {
-                    //跳过Object方法
-                    continue;
+                builder = builder.name(proxyClassName)
+                        //定义field
+                        .defineField(DEFAULT_SERVICE_FIELD_NAME, serviceClass, Modifier.PRIVATE + Modifier.FINAL)
+                        //定义constructor
+                        .defineConstructor(Modifier.PUBLIC)
+                        .withParameters(serviceClass)
+                        //只适用于父类有无参构造器
+                        .intercept(MethodCall.invoke(supperClass.getDeclaredConstructor())
+                                .andThen(FieldAccessor.ofField(DEFAULT_SERVICE_FIELD_NAME).setsArgumentAt(0)));
+
+                for (Method method : interfaceClass.getMethods()) {
+                    if (Modifier.isFinal(method.getModifiers())) {
+                        //跳过final 方法
+                        continue;
+                    }
+
+                    if (method.getDeclaringClass().equals(Object.class)) {
+                        //跳过Object方法
+                        continue;
+                    }
+
+                    if (method.isDefault()) {
+                        //跳过default
+                        continue;
+                    }
+
+                    builder.method(ElementMatchers.is(method))
+                            .intercept(MethodCall.invoke(method)
+                                    .onField(DEFAULT_SERVICE_FIELD_NAME)
+                                    .withArgumentArrayElements(0)
+                                    .withAssigner(Assigner.DEFAULT, Assigner.Typing.DYNAMIC));
                 }
 
-                if (method.isDefault()) {
-                    //跳过default
-                    continue;
-                }
+                return builder
+                        .make()
+                        .load(SysUtils.getClassLoader(interfaceClass))
+                        .getLoaded();
+            });
 
-                builder.method(ElementMatchers.is(method))
-                        .intercept(MethodCall.invoke(method)
-                                .onField(DEFAULT_SERVICE_FIELD_NAME)
-                                .withArgumentArrayElements(0)
-                                .withAssigner(Assigner.DEFAULT, Assigner.Typing.DYNAMIC));
-            }
-
-            return (P) builder
-                    .make()
-                    .load(SysUtils.getClassLoader(interfaceClass))
-                    .getLoaded()
-                    .getConstructor(interfaceClass)
+            return (P) proxyClass.getConstructor(interfaceClass)
                     .newInstance(service);
-        } catch (InstantiationException | IllegalAccessException | InvocationTargetException | NoSuchMethodException e) {
+        } catch (InstantiationException | IllegalAccessException | InvocationTargetException |
+                 NoSuchMethodException | ExecutionException e) {
             ExceptionUtils.throwExt(e);
         }
 
