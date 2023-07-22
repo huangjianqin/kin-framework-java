@@ -12,6 +12,7 @@ public class ReferenceCountedCacheTest {
         String k1 = "k1";
         String k2 = "k2";
 
+        System.out.println(cache.size());
         System.out.println(cache.get(k1, () -> new String("abc")));
         System.out.println(cache.get(k1, () -> new String("abc")) == cache.get(k1, () -> new String("abc")));
         cache.release(k1);

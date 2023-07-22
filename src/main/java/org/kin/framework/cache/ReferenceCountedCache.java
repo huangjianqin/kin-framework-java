@@ -6,10 +6,7 @@ import org.kin.framework.utils.HashUtils;
 
 import javax.annotation.Nullable;
 import javax.annotation.concurrent.ThreadSafe;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
-import java.util.Objects;
+import java.util.*;
 import java.util.concurrent.atomic.AtomicReferenceArray;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import java.util.function.BiConsumer;
@@ -301,6 +298,11 @@ public class ReferenceCountedCache<K, V> {
     private Collection<Entry<K, V>> entries() {
         List<Entry<K, V>> entries = new ArrayList<>();
         AtomicReferenceArray<Entry<K, V>> cache = this.cache;
+
+        if (Objects.isNull(cache)) {
+            return Collections.emptyList();
+        }
+
         for (int i = 0; i < bucketSize; i++) {
             Entry<K, V> head = cache.get(i);
 
