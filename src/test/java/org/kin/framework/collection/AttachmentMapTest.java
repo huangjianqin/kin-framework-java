@@ -24,6 +24,34 @@ public class AttachmentMapTest {
 
         System.out.println(attachmentMap.attachments());
         System.out.println(Objects.requireNonNull(attachmentMap.attachment("A")).toString());
-        System.out.println(attachmentMap.attachment("D","?"));
+        System.out.println(attachmentMap.attachment("D", "?"));
+
+        System.out.println("-------------------------------------------------------------------------------------------");
+        attachmentMap.attach("number", "1");
+        System.out.println(attachmentMap.byteAttachment("number"));
+        System.out.println(attachmentMap.shortAttachment("number"));
+        System.out.println(attachmentMap.intAttachment("number"));
+        System.out.println(attachmentMap.longAttachment("number"));
+        System.out.println(attachmentMap.doubleAttachment("number"));
+
+        attachmentMap.attach("number1", Integer.MAX_VALUE + "");
+//        System.out.println(attachmentMap.byteAttachment("number1"));
+//        System.out.println(attachmentMap.shortAttachment("number1"));
+        System.out.println(attachmentMap.intAttachment("number1"));
+        System.out.println(attachmentMap.longAttachment("number1"));
+        System.out.println(attachmentMap.doubleAttachment("number1"));
+
+        attachmentMap.attach("number2", (Double.MAX_VALUE / 2) + "");
+//        System.out.println(attachmentMap.byteAttachment("number2"));
+//        System.out.println(attachmentMap.shortAttachment("number2"));
+//        System.out.println(attachmentMap.intAttachment("number2"));
+//        System.out.println(attachmentMap.longAttachment("number2"));
+        System.out.println(attachmentMap.doubleAttachment("number2"));
+
+        attachmentMap.attach("bool1", "1");
+        System.out.println(attachmentMap.boolAttachment("bool1"));
+
+        attachmentMap.attach("bool2", "true");
+        System.out.println(attachmentMap.boolAttachment("bool2"));
     }
 }
