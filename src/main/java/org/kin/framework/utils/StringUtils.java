@@ -232,8 +232,17 @@ public class StringUtils {
             idx = 1;
         }
 
+        //是否已遍历到'.'
+        boolean everPoint = false;
         for (int i = idx; i < chars.length; i++) {
-            if (!Character.isDigit(chars[i])) {
+            if (Character.isDigit(chars[i])) {
+                continue;
+            }
+
+            if (chars[i] == '.' && !everPoint) {
+                //首次'.'
+                everPoint = true;
+            } else {
                 return false;
             }
         }

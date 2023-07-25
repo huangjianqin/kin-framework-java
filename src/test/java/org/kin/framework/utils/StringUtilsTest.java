@@ -40,6 +40,10 @@ public class StringUtilsTest {
         System.out.println(StringUtils.isNumeric("abc1234123213"));
         System.out.println(StringUtils.isNumeric("12341abvas23213"));
         System.out.println(StringUtils.isNumeric("--12341asgsa23213"));
+        System.out.println(StringUtils.isNumeric("-1234123213.1111"));
+        System.out.println(StringUtils.isNumeric("1234123213.1231412412412412"));
+        System.out.println(StringUtils.isNumeric("1234123213..1321.11.123"));
+        System.out.println(StringUtils.isNumeric("-1234123213.12314124.12.4124.12"));
 
         System.out.println("-------------------------------------------------------------");
         System.out.println(StringUtils.randomString(10));
