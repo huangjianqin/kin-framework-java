@@ -52,6 +52,7 @@ public class AttachmentMap implements AttachmentSupport {
      * @param key attachment key
      * @return true表示存在attachment key
      */
+    @Override
     public boolean hasAttachment(String key) {
         return attachments.containsKey(key);
     }
