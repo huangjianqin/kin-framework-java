@@ -1,5 +1,6 @@
 package org.kin.framework.utils;
 
+import java.nio.charset.StandardCharsets;
 import java.util.Collection;
 import java.util.Map;
 import java.util.concurrent.ThreadLocalRandom;
@@ -16,6 +17,10 @@ public class StringUtils {
     private static final String ALL_MATCH_PATTERN = "*";
     /** 常用字符 */
     private static final char[] CHARS = "QWERTYUIOPASDFGHJKLZXCVBNMqwertyuiopasdfghjklzxcvbnm1234567890~!@#$%^&*()-=_+[]{};:,./<>?|".toCharArray();
+    /** 十六进制字符 */
+    private static final String HEX_STRING = "0123456789ABCDEF";
+    /** 十六进制字符 */
+    private static final char[] HEX_CHARS = HEX_STRING.toCharArray();
 
     /**
      * 字符串是否为空(null or 空串)
@@ -176,15 +181,14 @@ public class StringUtils {
      * 字符串转16进制字符串
      */
     public static String str2HexStr(String str) {
-        char[] chars = "0123456789ABCDEF".toCharArray();
-        StringBuilder sb = new StringBuilder("");
+        StringBuilder sb = new StringBuilder();
         byte[] bs = str.getBytes();
         int bit;
-        for (int i = 0; i < bs.length; i++) {
-            bit = (bs[i] & 0x0f0) >> 4;
-            sb.append(chars[bit]);
-            bit = bs[i] & 0x0f;
-            sb.append(chars[bit]);
+        for (byte b : bs) {
+            bit = (b & 0x0f0) >> 4;
+            sb.append(HEX_CHARS[bit]);
+            bit = b & 0x0f;
+            sb.append(HEX_CHARS[bit]);
         }
         return sb.toString().trim();
     }
@@ -193,16 +197,22 @@ public class StringUtils {
      * 16进制字符串转字符串
      */
     public static String hexStr2Str(String hexStr) {
-        String str = "0123456789ABCDEF";
-        char[] hexs = hexStr.toCharArray();
+        return new String(hexStr2Bytes(hexStr), StandardCharsets.UTF_8);
+    }
+
+    /**
+     * 16进制字符串转bytes
+     */
+    public static byte[] hexStr2Bytes(String hexStr) {
+        char[] hexChars = hexStr.toCharArray();
         byte[] bytes = new byte[hexStr.length() / 2];
         int n;
         for (int i = 0; i < bytes.length; i++) {
-            n = str.indexOf(hexs[2 * i]) * 16;
-            n += str.indexOf(hexs[2 * i + 1]);
+            n = HEX_STRING.indexOf(hexChars[2 * i]) * 16;
+            n += HEX_STRING.indexOf(hexChars[2 * i + 1]);
             bytes[i] = (byte) (n & 0xff);
         }
-        return new String(bytes);
+        return bytes;
     }
 
     /**
