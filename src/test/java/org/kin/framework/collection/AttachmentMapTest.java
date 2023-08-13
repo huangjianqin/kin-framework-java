@@ -1,8 +1,12 @@
 package org.kin.framework.collection;
 
+import org.kin.framework.utils.IllegalFormatException;
+
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
+import java.util.function.Function;
 
 /**
  * @author huangjianqin
@@ -53,5 +57,18 @@ public class AttachmentMapTest {
 
         attachmentMap.attach("bool2", "true");
         System.out.println(attachmentMap.boolAttachment("bool2"));
+
+        attachmentMap.attach("arr1", new String[]{"Item1", "Item2", "Item3"});
+        System.out.println(Arrays.toString((Object[]) attachmentMap.attachment("arr1")));
+        attachmentMap.attach("arr2", "Item1,Item2,Item3");
+        System.out.println(Arrays.toString(attachmentMap.attachment("arr2", (Function<Object, String[]>) o -> {
+            if (o instanceof String) {
+                return o.toString().split(",");
+            } else if (o.getClass().isArray() && String.class.equals(o.getClass().getComponentType())) {
+                return (String[]) o;
+            } else {
+                throw new IllegalFormatException(String.format("attachment '%s' is not a string array", "arr2"));
+            }
+        })));
     }
 }

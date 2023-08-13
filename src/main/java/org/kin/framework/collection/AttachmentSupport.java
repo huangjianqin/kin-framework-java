@@ -2,6 +2,7 @@ package org.kin.framework.collection;
 
 import javax.annotation.Nullable;
 import java.util.Map;
+import java.util.function.Function;
 
 /**
  * @author huangjianqin
@@ -190,6 +191,26 @@ public interface AttachmentSupport {
      * @return attachment double value
      */
     double doubleAttachment(String key, double defaultValue);
+
+    /**
+     * 返回attachment value, 并使用{@code func}进行值转换
+     *
+     * @param key  attachment key
+     * @param func attachment convert function
+     * @return attachment value
+     */
+    @Nullable
+    <T> T attachment(String key, Function<Object, T> func);
+
+    /**
+     * 返回attachment value, 并使用{@code func}进行值转换, 如果不存在则取{@code defaultValue}
+     *
+     * @param key          attachment key
+     * @param func         attachment convert function
+     * @param defaultValue 默认attachment value
+     * @return attachment value
+     */
+    <T> T attachment(String key, Function<Object, T> func, T defaultValue);
 
     /**
      * 移除attachment

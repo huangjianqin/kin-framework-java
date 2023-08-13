@@ -8,6 +8,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
+import java.util.function.Function;
 
 /**
  * @author huangjianqin
@@ -83,7 +84,7 @@ public class AttachmentMap implements AttachmentSupport {
                 if (StringUtils.isNumeric(valueStr)) {
                     return Long.parseLong(valueStr) > 0;
                 } else {
-                    return Boolean.parseBoolean(value.toString());
+                    return Boolean.parseBoolean(value.toString().trim());
                 }
             } else {
                 throw new IllegalFormatException(String.format("attachment '%s' is not a boolean", value));
@@ -101,7 +102,7 @@ public class AttachmentMap implements AttachmentSupport {
                     Byte.TYPE.equals(valueClass)) {
                 return (byte) value;
             } else if (String.class.equals(valueClass)) {
-                return Byte.parseByte(value.toString());
+                return Byte.parseByte(value.toString().trim());
             } else {
                 throw new IllegalFormatException(String.format("attachment '%s' is not a byte", value));
             }
@@ -118,7 +119,7 @@ public class AttachmentMap implements AttachmentSupport {
                     Short.TYPE.equals(valueClass)) {
                 return (byte) value;
             } else if (String.class.equals(valueClass)) {
-                return Short.parseShort(value.toString());
+                return Short.parseShort(value.toString().trim());
             } else {
                 throw new IllegalFormatException(String.format("attachment '%s' is not a short", value));
             }
@@ -135,7 +136,7 @@ public class AttachmentMap implements AttachmentSupport {
                     Integer.TYPE.equals(valueClass)) {
                 return (byte) value;
             } else if (String.class.equals(valueClass)) {
-                return Integer.parseInt(value.toString());
+                return Integer.parseInt(value.toString().trim());
             } else {
                 throw new IllegalFormatException(String.format("attachment '%s' is not a integer", value));
             }
@@ -152,7 +153,7 @@ public class AttachmentMap implements AttachmentSupport {
                     Long.TYPE.equals(valueClass)) {
                 return (byte) value;
             } else if (String.class.equals(valueClass)) {
-                return Long.parseLong(value.toString());
+                return Long.parseLong(value.toString().trim());
             } else {
                 throw new IllegalFormatException(String.format("attachment '%s' is not a long", value));
             }
@@ -169,7 +170,7 @@ public class AttachmentMap implements AttachmentSupport {
                     Float.TYPE.equals(valueClass)) {
                 return (byte) value;
             } else if (String.class.equals(valueClass)) {
-                return Float.parseFloat(value.toString());
+                return Float.parseFloat(value.toString().trim());
             } else {
                 throw new IllegalFormatException(String.format("attachment '%s' is not a float", value));
             }
@@ -186,10 +187,29 @@ public class AttachmentMap implements AttachmentSupport {
                     Double.TYPE.equals(valueClass)) {
                 return (byte) value;
             } else if (String.class.equals(valueClass)) {
-                return Double.parseDouble(value.toString());
+                return Double.parseDouble(value.toString().trim());
             } else {
                 throw new IllegalFormatException(String.format("attachment '%s' is not a double", value));
             }
+        }
+        return defaultValue;
+    }
+
+    @Nullable
+    @Override
+    public <T> T attachment(String key, Function<Object, T> func) {
+        Object value = attachment(key);
+        if (Objects.nonNull(value)) {
+            return func.apply(value);
+        }
+        return null;
+    }
+
+    @Override
+    public <T> T attachment(String key, Function<Object, T> func, T defaultValue) {
+        Object value = attachment(key);
+        if (Objects.nonNull(value)) {
+            return func.apply(value);
         }
         return defaultValue;
     }
