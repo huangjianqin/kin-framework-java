@@ -6,10 +6,10 @@ package org.kin.framework.utils;
  * @author huangjianqin
  * @date 2021/12/16
  */
-public class FixEwma extends AbstractEwma {
+public class FixEWMA extends AbstractEWMA {
     private final double w;
 
-    public FixEwma(double w) {
+    public FixEWMA(double w) {
         this.w = w;
     }
 

@@ -1,6 +1,6 @@
 package org.kin.framework.io;
 
-import org.kin.framework.utils.FixEwma;
+import org.kin.framework.utils.FixEWMA;
 import org.kin.framework.utils.Maths;
 
 import javax.annotation.Nullable;
@@ -30,7 +30,7 @@ public final class ScalableByteArray implements Input, Output {
      * 基于历史分配容量, 预测下次写的容量, 进而防止突发高容量而导致分配过多byte[], 当预测容量小于, 可以适当释放部分byte[]
      * todo β值可修改
      */
-    private final FixEwma ewma = new FixEwma(0.5);
+    private final FixEWMA ewma = new FixEWMA(0.5);
 
     public ScalableByteArray() {
         //默认256 bytes

@@ -10,7 +10,7 @@ package org.kin.framework.utils;
  * @author huangjianqin
  * @date 2021/12/8
  */
-public abstract class AbstractEwma {
+public abstract class AbstractEWMA {
     protected volatile double ewma;
 
     /**

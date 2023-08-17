@@ -9,8 +9,8 @@ import java.util.concurrent.atomic.AtomicLongFieldUpdater;
  * @author huangjianqin
  * @date 2021/12/8
  */
-public class TimeEwma extends AbstractEwma {
-    private static final AtomicLongFieldUpdater<TimeEwma> STAMP = AtomicLongFieldUpdater.newUpdater(TimeEwma.class, "stamp");
+public class TimeEWMA extends AbstractEWMA {
+    private static final AtomicLongFieldUpdater<TimeEWMA> STAMP = AtomicLongFieldUpdater.newUpdater(TimeEWMA.class, "stamp");
 
     /** (希腊字母)为EWMA的时间常量 */
     private final long tau;
@@ -21,7 +21,7 @@ public class TimeEwma extends AbstractEwma {
      * @param unit         {@code halfLife}时间单位
      * @param initialValue 初始ewma值
      */
-    public TimeEwma(long halfLife, TimeUnit unit, double initialValue) {
+    public TimeEWMA(long halfLife, TimeUnit unit, double initialValue) {
         //tau约等于1.5*halfLife, 相当于认为多一半的数据量, 计算出来的ewma值相对更新接近真实, 特别是刚开始的时候
         this.tau = TimeUnit.NANOSECONDS.convert((long) (halfLife / Math.log(2)), unit);
         this.ewma = initialValue;
@@ -54,6 +54,6 @@ public class TimeEwma extends AbstractEwma {
 
     @Override
     public String toString() {
-        return "TimeEwma(value=" + ewma + ", age=" + (now() - stamp) + ")";
+        return "TimeEWMA(value=" + ewma + ", age=" + (now() - stamp) + ")";
     }
 }
