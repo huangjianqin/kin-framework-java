@@ -208,7 +208,7 @@ public final class ScalableByteBuffer implements Input, Output {
             ByteBufferUtils.toReadMode(byteBufferList.get(i));
         }
         //记录本次写入的字节数
-        ewma.insert(readableBytes());
+        ewma.observe(readableBytes());
     }
 
     /**

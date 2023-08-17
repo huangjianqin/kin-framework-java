@@ -29,7 +29,7 @@ public class PeakEWMA extends AbstractEWMA {
     }
 
     @Override
-    public synchronized void insert(double x) {
+    public synchronized void observe(double x) {
         long now = now();
         //距离上次计算逝去的时间
         double elapsed = Math.max(0, now - stamp);
@@ -39,7 +39,7 @@ public class PeakEWMA extends AbstractEWMA {
         //修正β, elapsed越大, β越小
         //可以认为时间过得越长, 当前越不靠谱, 所以下降得更慢些
         double w = Math.exp(-elapsed / tau);
-        super.insert(w, x);
+        super.observe(w, x);
     }
 
     @Override

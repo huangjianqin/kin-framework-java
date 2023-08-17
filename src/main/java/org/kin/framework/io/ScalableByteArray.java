@@ -241,7 +241,7 @@ public final class ScalableByteArray implements Input, Output {
         readerIndex = 0;
 
         //记录clear之前写入的字节数
-        ewma.insert(readableBytes());
+        ewma.observe(readableBytes());
 
         //后重置writer index
         writerIndex = 0;

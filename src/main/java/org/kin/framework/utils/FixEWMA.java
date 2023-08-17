@@ -14,7 +14,7 @@ public class FixEWMA extends AbstractEWMA {
     }
 
     @Override
-    public synchronized void insert(double x) {
-        super.insert(w, x);
+    public synchronized void observe(double x) {
+        super.observe(w, x);
     }
 }

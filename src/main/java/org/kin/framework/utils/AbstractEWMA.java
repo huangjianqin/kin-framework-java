@@ -18,7 +18,7 @@ public abstract class AbstractEWMA {
      *
      * @param x θt
      */
-    public abstract void insert(double x);
+    public abstract void observe(double x);
 
     /**
      * 计算下一时刻的ewma值
@@ -26,7 +26,7 @@ public abstract class AbstractEWMA {
      * @param w β
      * @param x θt
      */
-    protected void insert(double w, double x) {
+    protected void observe(double w, double x) {
         ewma = w * ewma + (1.0 - w) * x;
     }
 
