@@ -1,8 +1,6 @@
-package org.kin.framework;
+package org.kin.framework.utils;
 
 import org.kin.framework.proxy.ProxyInvoker;
-import org.kin.framework.utils.ClassScanUtils;
-import org.kin.framework.utils.SPI;
 
 /**
  * @author huangjianqin
