@@ -1,5 +1,6 @@
 package org.kin.framework.utils;
 
+import javax.annotation.Nullable;
 import java.nio.charset.StandardCharsets;
 import java.util.Collection;
 import java.util.Map;
@@ -310,5 +311,23 @@ public class StringUtils {
         }
 
         return sb.toString();
+    }
+
+    /**
+     * if s1 is null and s2 is null, then return true
+     *
+     * @param s1 str1
+     * @param s2 str2
+     * @return equals
+     */
+    public static boolean isEquals(@Nullable String s1,
+                                   @Nullable String s2) {
+        if (s1 == null && s2 == null) {
+            return true;
+        }
+        if (s1 == null || s2 == null) {
+            return false;
+        }
+        return s1.equals(s2);
     }
 }
