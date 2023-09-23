@@ -76,8 +76,7 @@ public class AttachmentMap implements AttachmentSupport {
         Object value = attachment(key);
         if (Objects.nonNull(value)) {
             Class<?> valueClass = value.getClass();
-            if (Boolean.class.equals(valueClass) ||
-                    Boolean.TYPE.equals(valueClass)) {
+            if (Boolean.class.equals(valueClass)) {
                 return (boolean) value;
             } else if (String.class.equals(valueClass)) {
                 String valueStr = (String) value;
@@ -98,8 +97,7 @@ public class AttachmentMap implements AttachmentSupport {
         Object value = attachment(key);
         if (Objects.nonNull(value)) {
             Class<?> valueClass = value.getClass();
-            if (Byte.class.equals(valueClass) ||
-                    Byte.TYPE.equals(valueClass)) {
+            if (Byte.class.equals(valueClass)) {
                 return (byte) value;
             } else if (String.class.equals(valueClass)) {
                 return Byte.parseByte(value.toString().trim());
@@ -115,8 +113,7 @@ public class AttachmentMap implements AttachmentSupport {
         Object value = attachment(key);
         if (Objects.nonNull(value)) {
             Class<?> valueClass = value.getClass();
-            if (Short.class.equals(valueClass) ||
-                    Short.TYPE.equals(valueClass)) {
+            if (Short.class.equals(valueClass)) {
                 return (short) value;
             } else if (String.class.equals(valueClass)) {
                 return Short.parseShort(value.toString().trim());
@@ -132,8 +129,7 @@ public class AttachmentMap implements AttachmentSupport {
         Object value = attachment(key);
         if (Objects.nonNull(value)) {
             Class<?> valueClass = value.getClass();
-            if (Integer.class.equals(valueClass) ||
-                    Integer.TYPE.equals(valueClass)) {
+            if (Integer.class.equals(valueClass)) {
                 return (int) value;
             } else if (String.class.equals(valueClass)) {
                 return Integer.parseInt(value.toString().trim());
@@ -149,8 +145,7 @@ public class AttachmentMap implements AttachmentSupport {
         Object value = attachment(key);
         if (Objects.nonNull(value)) {
             Class<?> valueClass = value.getClass();
-            if (Long.class.equals(valueClass) ||
-                    Long.TYPE.equals(valueClass)) {
+            if (Long.class.equals(valueClass)) {
                 return (long) value;
             } else if (String.class.equals(valueClass)) {
                 return Long.parseLong(value.toString().trim());
@@ -166,8 +161,7 @@ public class AttachmentMap implements AttachmentSupport {
         Object value = attachment(key);
         if (Objects.nonNull(value)) {
             Class<?> valueClass = value.getClass();
-            if (Float.class.equals(valueClass) ||
-                    Float.TYPE.equals(valueClass)) {
+            if (Float.class.equals(valueClass)) {
                 return (float) value;
             } else if (String.class.equals(valueClass)) {
                 return Float.parseFloat(value.toString().trim());
@@ -183,8 +177,7 @@ public class AttachmentMap implements AttachmentSupport {
         Object value = attachment(key);
         if (Objects.nonNull(value)) {
             Class<?> valueClass = value.getClass();
-            if (Double.class.equals(valueClass) ||
-                    Double.TYPE.equals(valueClass)) {
+            if (Double.class.equals(valueClass)) {
                 return (double) value;
             } else if (String.class.equals(valueClass)) {
                 return Double.parseDouble(value.toString().trim());
@@ -223,7 +216,7 @@ public class AttachmentMap implements AttachmentSupport {
 
     @Override
     public Map<String, Object> attachments() {
-        return attachments;
+        return new HashMap<>(attachments);
     }
 
     @Override
