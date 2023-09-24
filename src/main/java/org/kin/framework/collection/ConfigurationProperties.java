@@ -15,17 +15,17 @@ public interface ConfigurationProperties {
      *
      * @param properties properties
      */
-    void putAll(Map<String, ?> properties);
+    void putAll(Map<? extends String, ?> properties);
 
     /**
      * 添加property
      *
      * @param key property key
      * @param obj property value
-     * @return this
+     * @return the previous value associated with key, or null if there was no mapping for key
      */
     @Nullable
-    <T> T put(String key, Object obj);
+    Object put(String key, Object obj);
 
     /**
      * 是否存在property key

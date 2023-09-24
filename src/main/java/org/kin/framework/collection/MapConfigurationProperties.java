@@ -4,17 +4,14 @@ import org.kin.framework.utils.IllegalFormatException;
 import org.kin.framework.utils.StringUtils;
 
 import javax.annotation.Nullable;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Objects;
+import java.util.*;
 import java.util.function.Function;
 
 /**
  * @author huangjianqin
  * @date 2023/9/23
  */
-public class MapConfigurationProperties implements ConfigurationProperties {
+public class MapConfigurationProperties implements ConfigurationProperties, Map<String, Object> {
     /** properties */
     private final Map<String, Object> properties;
 
@@ -27,15 +24,14 @@ public class MapConfigurationProperties implements ConfigurationProperties {
     }
 
     @Override
-    public void putAll(Map<String, ?> properties) {
+    public void putAll(Map<? extends String, ?> properties) {
         this.properties.putAll(properties);
     }
 
-    @SuppressWarnings("unchecked")
     @Nullable
     @Override
-    public <T> T put(String key, Object obj) {
-        return (T) properties.put(key, obj);
+    public Object put(String key, Object obj) {
+        return properties.put(key, obj);
     }
 
     @Override
@@ -207,6 +203,52 @@ public class MapConfigurationProperties implements ConfigurationProperties {
     @Override
     public void clear() {
         properties.clear();
+    }
+
+    //-------------------------------------------------------------------------------------------Map
+    @Override
+    public int size() {
+        return properties.size();
+    }
+
+    @Override
+    public boolean isEmpty() {
+        return properties.isEmpty();
+    }
+
+    @Override
+    public boolean containsKey(Object key) {
+        return properties.containsKey(key);
+    }
+
+    @Override
+    public boolean containsValue(Object value) {
+        return properties.containsValue(value);
+    }
+
+    @Override
+    public Object get(Object key) {
+        return properties.get(key);
+    }
+
+    @Override
+    public Object remove(Object key) {
+        return properties.remove(key);
+    }
+
+    @Override
+    public Set<String> keySet() {
+        return properties.keySet();
+    }
+
+    @Override
+    public Collection<Object> values() {
+        return properties.values();
+    }
+
+    @Override
+    public Set<Entry<String, Object>> entrySet() {
+        return properties.entrySet();
     }
 
     @Override
