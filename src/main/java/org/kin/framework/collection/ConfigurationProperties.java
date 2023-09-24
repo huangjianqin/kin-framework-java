@@ -3,6 +3,7 @@ package org.kin.framework.collection;
 import javax.annotation.Nullable;
 import java.util.Map;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 
 /**
  * @author huangjianqin
@@ -220,6 +221,15 @@ public interface ConfigurationProperties {
      * @return 所有property
      */
     Map<String, Object> toMap();
+
+    /**
+     * 返回所有property
+     *
+     * @return 所有property
+     */
+    default Map<String, String> toProperties() {
+        return toMap().entrySet().stream().collect(Collectors.toMap(Map.Entry::getKey, e -> e.getValue().toString()));
+    }
 
     /**
      * 移除所有property
