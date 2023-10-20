@@ -18,10 +18,6 @@ public class StringUtils {
     private static final String ALL_MATCH_PATTERN = "*";
     /** 常用字符 */
     private static final char[] CHARS = "QWERTYUIOPASDFGHJKLZXCVBNMqwertyuiopasdfghjklzxcvbnm1234567890~!@#$%^&*()-=_+[]{};:,./<>?|".toCharArray();
-    /** 十六进制字符 */
-    private static final String HEX_STRING = "0123456789ABCDEF";
-    /** 十六进制字符 */
-    private static final char[] HEX_CHARS = HEX_STRING.toCharArray();
 
     /**
      * 字符串是否为空(null or 空串)
@@ -182,38 +178,21 @@ public class StringUtils {
      * 字符串转16进制字符串
      */
     public static String str2HexStr(String str) {
-        StringBuilder sb = new StringBuilder();
-        byte[] bs = str.getBytes();
-        int bit;
-        for (byte b : bs) {
-            bit = (b & 0x0f0) >> 4;
-            sb.append(HEX_CHARS[bit]);
-            bit = b & 0x0f;
-            sb.append(HEX_CHARS[bit]);
-        }
-        return sb.toString().trim();
+        return Hex.encode(str);
     }
 
     /**
      * 16进制字符串转字符串
      */
     public static String hexStr2Str(String hexStr) {
-        return new String(hexStr2Bytes(hexStr), StandardCharsets.UTF_8);
+        return Hex.decode2String(hexStr);
     }
 
     /**
      * 16进制字符串转bytes
      */
     public static byte[] hexStr2Bytes(String hexStr) {
-        char[] hexChars = hexStr.toCharArray();
-        byte[] bytes = new byte[hexStr.length() / 2];
-        int n;
-        for (int i = 0; i < bytes.length; i++) {
-            n = HEX_STRING.indexOf(hexChars[2 * i]) * 16;
-            n += HEX_STRING.indexOf(hexChars[2 * i + 1]);
-            bytes[i] = (byte) (n & 0xff);
-        }
-        return bytes;
+        return Hex.decode(hexStr);
     }
 
     /**
