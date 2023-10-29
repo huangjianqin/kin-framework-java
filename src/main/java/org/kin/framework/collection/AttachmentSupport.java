@@ -1,5 +1,7 @@
 package org.kin.framework.collection;
 
+import org.kin.framework.utils.CollectionUtils;
+
 import javax.annotation.Nullable;
 import java.util.Map;
 import java.util.function.Function;
@@ -227,6 +229,15 @@ public interface AttachmentSupport {
      * @return 所有attachment
      */
     Map<String, Object> attachments();
+
+    /**
+     * 返回attachment map是否为空
+     *
+     * @return true表示attachment map为空
+     */
+    default boolean isEmpty() {
+        return CollectionUtils.isEmpty(attachments());
+    }
 
     /**
      * 移除所有attachment

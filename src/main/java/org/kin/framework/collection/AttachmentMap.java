@@ -1,5 +1,6 @@
 package org.kin.framework.collection;
 
+import org.kin.framework.utils.CollectionUtils;
 import org.kin.framework.utils.IllegalFormatException;
 import org.kin.framework.utils.StringUtils;
 
@@ -32,11 +33,17 @@ public class AttachmentMap implements AttachmentSupport {
 
     @Override
     public void attachMany(Map<String, ?> attachments) {
+        if (CollectionUtils.isEmpty(attachments)) {
+            return;
+        }
         this.attachments.putAll(attachments);
     }
 
     @Override
     public void attachMany(AttachmentMap other) {
+        if (CollectionUtils.isEmpty(other)) {
+            return;
+        }
         this.attachments.putAll(other.attachments);
     }
 
