@@ -236,11 +236,11 @@
             <!--                </configuration>-->
             <!--            </plugin>-->
 
-            <!-- maven单独打包-->
+            <!-- maven单独打包, all in one, 大jar包 -->
             <!--            <plugin>-->
             <!--                <groupId>org.apache.maven.plugins</groupId>-->
             <!--                <artifactId>maven-assembly-plugin</artifactId>-->
-            <!--                <version>2.5.5</version>-->
+            <!--                <version>3.6.0</version>-->
             <!--                <executions>-->
             <!--                    <execution>-->
             <!--                        <id>make-assembly</id>-->
@@ -253,6 +253,10 @@
             <!--                    </execution>-->
             <!--                </executions>-->
             <!--                <configuration>-->
+            <!--                    &lt;!&ndash; 去掉AssemblyId(相当于版本号) &ndash;&gt;-->
+            <!--                    <appendAssemblyId>false</appendAssemblyId>-->
+            <!--                    &lt;!&ndash; 最终输出的文件名 &ndash;&gt;-->
+            <!--                    <finalName>${project.name}-${project.version}</finalName>-->
             <!--                    <archive>-->
             <!--                        <manifest>-->
             <!--                            <addClasspath>true</addClasspath>-->
@@ -275,13 +279,13 @@
             <!--                </configuration>-->
             <!--            </plugin>-->
 
-            <!-- 利用assembly.xml打包, 可以根据配置指定打包结构,
+            <!-- 利用assembly.xml打包, 依赖配置规则进行打包,
                  特别适用于spring boot项目, 有些资源配置放在resources下面, 通过file协议会读取不到(因为在jar里面了)
                  这里面需要将部分文件放到jar外包, 并在启动时, 将其包在classpath里面 -->
             <!--            <plugin>-->
             <!--                <groupId>org.apache.maven.plugins</groupId>-->
             <!--                <artifactId>maven-assembly-plugin</artifactId>-->
-            <!--                <version>2.5.5</version>-->
+            <!--                <version>3.6.0</version>-->
             <!--                <executions>-->
             <!--                    <execution>-->
             <!--                        <id>packetToTar</id>-->
@@ -293,11 +297,10 @@
             <!--                    </execution>-->
             <!--                </executions>-->
             <!--                <configuration>-->
+            <!--                    &lt;!&ndash; 去掉AssemblyId(相当于版本号) &ndash;&gt;-->
             <!--                    <appendAssemblyId>false</appendAssemblyId>-->
-            <!--                    <descriptors>-->
-            <!--                        &lt;!&ndash; 相当于${project.basedir}/assembly/assembly.xml &ndash;&gt;-->
-            <!--                        <descriptor>build/assembly.xml</descriptor>-->
-            <!--                    </descriptors>-->
+            <!--                    &lt;!&ndash; 最终输出的文件名 &ndash;&gt;-->
+            <!--                    <finalName>${project.name}</finalName>-->
             <!--                    <archive>-->
             <!--                        <manifest>-->
             <!--                            <addClasspath>true</addClasspath>-->
@@ -313,6 +316,10 @@
             <!--                            <Class-Path>lib/*</Class-Path>-->
             <!--                        </manifestEntries>-->
             <!--                    </archive>-->
+            <!--                    <descriptors>-->
+            <!--                        &lt;!&ndash; 相当于${project.basedir}/assembly/assembly.xml &ndash;&gt;-->
+            <!--                        <descriptor>build/assembly.xml</descriptor>-->
+            <!--                    </descriptors>-->
             <!--                </configuration>-->
             <!--            </plugin>-->
 
@@ -361,32 +368,32 @@
             <!--</plugin>-->
 
             <!-- 可自动替换pom中的${revision}值  -->
-<!--            <plugin>-->
-<!--                <groupId>org.codehaus.mojo</groupId>-->
-<!--                <artifactId>flatten-maven-plugin</artifactId>-->
-<!--                <version>1.1.0</version>-->
-<!--                <configuration>-->
-<!--                    &lt;!&ndash; 是否更新pom文件，此处还有更高级的用法 &ndash;&gt;-->
-<!--                    <updatePomFile>true</updatePomFile>-->
-<!--                    <flattenMode>resolveCiFriendliesOnly</flattenMode>-->
-<!--                </configuration>-->
-<!--                <executions>-->
-<!--                    <execution>-->
-<!--                        <id>flatten</id>-->
-<!--                        <phase>process-resources</phase>-->
-<!--                        <goals>-->
-<!--                            <goal>flatten</goal>-->
-<!--                        </goals>-->
-<!--                    </execution>-->
-<!--                    <execution>-->
-<!--                        <id>flatten.clean</id>-->
-<!--                        <phase>clean</phase>-->
-<!--                        <goals>-->
-<!--                            <goal>clean</goal>-->
-<!--                        </goals>-->
-<!--                    </execution>-->
-<!--                </executions>-->
-<!--            </plugin>-->
+            <!--            <plugin>-->
+            <!--                <groupId>org.codehaus.mojo</groupId>-->
+            <!--                <artifactId>flatten-maven-plugin</artifactId>-->
+            <!--                <version>1.1.0</version>-->
+            <!--                <configuration>-->
+            <!--                    &lt;!&ndash; 是否更新pom文件，此处还有更高级的用法 &ndash;&gt;-->
+            <!--                    <updatePomFile>true</updatePomFile>-->
+            <!--                    <flattenMode>resolveCiFriendliesOnly</flattenMode>-->
+            <!--                </configuration>-->
+            <!--                <executions>-->
+            <!--                    <execution>-->
+            <!--                        <id>flatten</id>-->
+            <!--                        <phase>process-resources</phase>-->
+            <!--                        <goals>-->
+            <!--                            <goal>flatten</goal>-->
+            <!--                        </goals>-->
+            <!--                    </execution>-->
+            <!--                    <execution>-->
+            <!--                        <id>flatten.clean</id>-->
+            <!--                        <phase>clean</phase>-->
+            <!--                        <goals>-->
+            <!--                            <goal>clean</goal>-->
+            <!--                        </goals>-->
+            <!--                    </execution>-->
+            <!--                </executions>-->
+            <!--            </plugin>-->
         </plugins>
     </build>
 </project>
