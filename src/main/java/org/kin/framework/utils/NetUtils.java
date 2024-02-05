@@ -10,6 +10,7 @@ import java.security.PrivilegedAction;
 import java.util.ArrayList;
 import java.util.Enumeration;
 import java.util.List;
+import java.util.StringJoiner;
 import java.util.regex.Pattern;
 
 /**
@@ -19,16 +20,26 @@ import java.util.regex.Pattern;
 public class NetUtils {
     private static final Logger log = LoggerFactory.getLogger(NetUtils.class);
 
-    /** 全开放ip */
+    /**
+     * 全开放ip
+     */
     public static final String ANY = "0.0.0.0";
-    /** localhost ip */
+    /**
+     * localhost ip
+     */
     public static final String LOCALHOST_IP = "127.0.0.1";
-    /** localhost name */
+    /**
+     * localhost name
+     */
     public static final String LOCALHOST_NAME = "localhost";
-    /** ip地址正则匹配 */
+    /**
+     * ip地址正则匹配
+     */
     private static final Pattern IP_PATTERN = Pattern.compile("\\d{1,3}(\\.\\d{1,3}){3,5}:\\d{1,5}$");
 
-    /** 本地address, 非localhost */
+    /**
+     * 本地address, 非localhost
+     */
     public static final InetAddress LOCAL_ADDRESS = getLocalAddress0();
     /**
      * The {@link Inet4Address} that represents the IPv4 loopback address '127.0.0.1'
@@ -475,6 +486,7 @@ public class NetUtils {
 
     /**
      * 检查端口是否被占用
+     *
      * @return true表示没有被占用
      */
     public static boolean isValidPort(int port) {
@@ -577,7 +589,112 @@ public class NetUtils {
         return ipHashCode(ip) + port;
     }
 
+    /**
+     * 整形ip转ipv4字符串
+     *
+     * @param ipNum 整形ip
+     * @return 整形
+     */
+    public static String longToIp4(long ipNum) {
+        return ((ipNum >> 24) & 0xFF) + "." +
+                ((ipNum >> 16) & 0xFF) + "." +
+                ((ipNum >> 8) & 0xFF) + "." +
+                (ipNum & 0xFF);
+    }
+
+    /**
+     * ipv4字符串转整形ip
+     *
+     * @param ip ip字符串
+     * @return 整形ip
+     */
+    public static long ip4ToLong(String ip) {
+        long ipNum = 0;
+        String[] d = ip.split("\\.");
+        for (String b : d) {
+            ipNum <<= 8;
+            ipNum |= Long.parseLong(b) & 0xff;
+        }
+        return ipNum;
+    }
+
+    /**
+     * 整形ip转ipv6字符串
+     *
+     * @param ipNums 整形ip
+     * @return 整形
+     */
+    public static String longToIpv6(long[] ipNums) {
+        StringJoiner sj = new StringJoiner(":");
+        for (long numSlice : ipNums) {
+            for (int j = 0; j < 4; j++) {
+                long cur = numSlice & 0xFFFF;
+                if(cur >= 1){
+                    sj.add(Long.toString(cur, 16));
+                }else{
+                    //压缩0
+                    sj.add("");
+                }
+                numSlice >>= 16;
+            }
+        }
+        return sj.toString();
+    }
+
+    /**
+     * ipv4字符串转整形ip
+     *
+     * @param ip ip字符串
+     * @return 整形ip
+     */
+    public static long[] ipv6ToLong(String ip) {
+        String[] ipSlices = ip.split(":");
+        if (ipSlices.length != 8) {
+            throw new IllegalArgumentException(ip + " is not a valid IPv6 address");
+        }
+
+        long[] ipNums = new long[2];
+        for (int i = 0; i < 8; i++) {
+            String slice = ipSlices[i];
+            if(StringUtils.isBlank(slice)){
+                //:: 压缩0
+                slice = "0000";
+            }
+            long num = Long.parseLong(slice, 16);
+            long right = num << (16 * i);
+            // Each long holds four groups
+            int length = i >> 2;
+            ipNums[length] = ipNums[length] | right;
+        }
+        return ipNums;
+    }
+
+    /**
+     * 对比128位ipv6整形
+     *
+     * @param n1 第一个ipv6整形
+     * @param n2 第二个ipv6整形
+     * @return 1 -> n1>n2; 0 -> n1=n2; -1 -> n1<n2
+     */
+    public static int compareIpv6Num(long[] n1, long[] n2) {
+        int result = Long.compareUnsigned(n1[0], n2[0]);
+        if(result != 0){
+            return result;
+        }
+
+        result = Long.compareUnsigned(n1[1], n2[1]);
+        if(result != 0){
+            return result;
+        }
+
+        return 0;
+    }
+
     //---------------------------------------------------------------------------------------------------------
+
+    /**
+     * 网卡接口地址
+     */
     static final class NetworkIfaceAndInetAddress {
         private final NetworkInterface iface;
         private final InetAddress address;
