@@ -1,5 +1,6 @@
 package org.kin.framework.collection;
 
+import org.kin.framework.utils.CollectionUtils;
 import org.kin.framework.utils.IllegalFormatException;
 import org.kin.framework.utils.StringUtils;
 
@@ -25,6 +26,9 @@ public class MapConfigurationProperties implements ConfigurationProperties, Map<
 
     @Override
     public void putAll(Map<? extends String, ?> properties) {
+        if (CollectionUtils.isEmpty(properties)) {
+            return;
+        }
         this.properties.putAll(properties);
     }
 

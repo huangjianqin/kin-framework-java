@@ -1,5 +1,7 @@
 package org.kin.framework.utils;
 
+import org.kin.framework.collection.AttachmentMap;
+
 import java.util.*;
 
 /**
@@ -51,5 +53,13 @@ public class CollectionUtils {
     @SuppressWarnings("unchecked")
     public static <T> Enumeration<T> emptyEnumeration() {
         return (Enumeration<T>) EMPTY_ENUMERATION;
+    }
+
+    public static <E> boolean isEmpty(AttachmentMap attachmentMap) {
+        return attachmentMap == null || attachmentMap.isEmpty();
+    }
+
+    public static <E> boolean isNonEmpty(AttachmentMap attachmentMap) {
+        return !isEmpty(attachmentMap);
     }
 }
