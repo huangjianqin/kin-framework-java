@@ -1,9 +1,11 @@
 package org.kin.framework;
 
 import com.google.common.base.Preconditions;
+import org.kin.framework.utils.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.annotation.Nullable;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Comparator;
@@ -37,12 +39,14 @@ public final class JvmCloseCleaner {
 
     private void waitingClose() {
         //等spring容器完全初始化后执行
-        Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+        Thread hookThread = new Thread(() -> {
             this.orderedCloseableList.sort(Comparator.comparingInt(DelegatingOrderedCloseable::getNPriority));
             for (DelegatingOrderedCloseable wrapper : this.orderedCloseableList) {
                 wrapper.close();
             }
-        }));
+        });
+        hookThread.setName("Shutdown-Hook");
+        Runtime.getRuntime().addShutdownHook(hookThread);
     }
 
     public void add(Closeable closeable) {
@@ -67,9 +71,18 @@ public final class JvmCloseCleaner {
     }
 
     public void addAll(int priority, Collection<Closeable> closeables) {
-        Preconditions.checkArgument(0 < priority && priority <= 10, "priority must be range from 1 to 10");
+        Preconditions.checkArgument(0 < priority && priority <= MAX_PRIORITY, "priority must be range from %s to %s", MIN_PRIORITY, MAX_PRIORITY);
         List<DelegatingOrderedCloseable> orderedCloseableList = closeables.stream().map(c -> new DelegatingOrderedCloseable(c, priority)).collect(Collectors.toList());
         this.orderedCloseableList.addAll(orderedCloseableList);
+    }
+
+    public void add(String name, Closeable closeable) {
+        add(name, MIN_PRIORITY, closeable);
+
+    }
+    public void add(String name, int priority, Closeable closeable) {
+        Preconditions.checkArgument(0 < priority && priority <= MAX_PRIORITY, "priority must be range from %s to %s", MIN_PRIORITY, MAX_PRIORITY);
+        this.orderedCloseableList.add(new DelegatingOrderedCloseable(name, closeable, priority));
     }
 
     public static JvmCloseCleaner instance() {
@@ -82,12 +95,20 @@ public final class JvmCloseCleaner {
      * 支持带优先级的且委托其他{@link Closeable}执行close逻辑的{@link Closeable}实例
      */
     private class DelegatingOrderedCloseable implements Closeable {
+        @Nullable
+        private String name;
         /** 真正的{@link Closeable}实例 */
         private final Closeable closeable;
         /** 优先级 */
         private final int priority;
 
         public DelegatingOrderedCloseable(Closeable closeable, int priority) {
+            this.closeable = closeable;
+            this.priority = priority;
+        }
+
+        public DelegatingOrderedCloseable(String name, Closeable closeable, int priority) {
+            this.name = name;
             this.closeable = closeable;
             this.priority = priority;
         }
@@ -101,14 +122,25 @@ public final class JvmCloseCleaner {
 
         @Override
         public void close() {
-            log.info("{} closing...", closeable.getClass().getName());
+            String name = StringUtils.isNotBlank(this.name) ? this.name : closeable.getClass().getName();
+            log.info("{} shutting down...", name);
             long startTime = System.currentTimeMillis();
-            closeable.close();
-            long endTime = System.currentTimeMillis();
-            log.info("{} close cost {} ms", closeable.getClass().getName(), endTime - startTime);
+            try {
+                closeable.close();
+                long endTime = System.currentTimeMillis();
+                log.info("{} shutdown complete, cost {} ms", name, endTime - startTime);
+            } catch (Exception e) {
+                long endTime = System.currentTimeMillis();
+                log.error("{} shutdown fail, cost {} ms {}", name, endTime - startTime, e);
+            }
         }
 
         //getter
+        @Nullable
+        public String getName() {
+            return name;
+        }
+
         public Closeable getCloseable() {
             return closeable;
         }
