@@ -32,6 +32,9 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
+ * Subject: 主体
+ * Issuer: 颁发者
+ * 
  * @author huangjianqin
  * @date 2024/5/25
  */
