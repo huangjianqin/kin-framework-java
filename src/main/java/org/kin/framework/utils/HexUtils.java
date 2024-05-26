@@ -3,79 +3,65 @@ package org.kin.framework.utils;
 import java.nio.charset.StandardCharsets;
 
 /**
- * 16进制转换工具类
+ * 十六进制转换工具类
  * @author huangjianqin
  * @date 2023/10/18
  */
-public final class Hex {
-    /** 16进制字符(小写) */
-    private static final char[] DIGITS_LOWER = new char[]{'0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b', 'c', 'd', 'e', 'f'};
-    /** 16进制字符(大写) */
-    private static final char[] DIGITS_UPPER = new char[]{'0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E', 'F'};
+public final class HexUtils {
+
+    private HexUtils() {
+    }
 
     /**
-     * 16进制编码
+     * 十六进制编码
      */
     public static String encode(String str) {
         return encode(str, false);
     }
 
     /**
-     * 16进制编码
+     * 十六进制编码
      */
     public static String encode(String str, boolean toLowerCase) {
         return encode(str.getBytes(StandardCharsets.UTF_8), toLowerCase);
     }
 
     /**
-     * 16进制编码
+     * 十六进制编码
      */
-    public static String encode(byte[] data) {
-        return encode(data, false);
+    public static String encode(byte[] bytes) {
+        return encode(bytes, false);
     }
 
     /**
-     * 16进制编码
+     * 十六进制编码
      */
-    public static String encode(byte[] data, boolean toLowerCase) {
-        return new String(encodeHex(data, toLowerCase? DIGITS_LOWER: DIGITS_UPPER));
-    }
-
-    /**
-     * 16进制编码
-     */
-    private static char[] encodeHex(byte[] data, char[] toDigits) {
-        int l = data.length;
-        char[] out = new char[l << 1];
-        int i = 0;
-
-        for(int j = 0; i < l; ++i) {
-            out[j++] = toDigits[(240 & data[i]) >>> 4];
-            out[j++] = toDigits[15 & data[i]];
+    public static String encode(byte[] bytes, boolean toLowerCase) {
+        StringBuilder sb = new StringBuilder();
+        for (byte b : bytes) {
+            sb.append(Integer.toHexString((b & 0xFF) | 0x100), 1, 3);
         }
-
-        return out;
+        return toLowerCase ? sb.toString() : sb.toString().toUpperCase();
     }
-
     /**
-     * 16进制解码
+     * 十六进制解码
      */
     public static byte[] decode(String str) {
         return decodeHex(str.toCharArray());
     }
 
     /**
-     * 16进制解码
+     * 十六进制解码
      */
     public static String decode2String(String str) {
         return new String(decodeHex(str.toCharArray()), StandardCharsets.UTF_8);
     }
 
     /**
-     * 16进制解码
+     * 十六进制解码
      */
-    private static byte[] decodeHex(char[] data){
-        int len = data.length;
+    private static byte[] decodeHex(char[] chars) {
+        int len = chars.length;
         if ((len & 1) != 0) {
             throw new DecodeException("odd number of characters");
         } else {
@@ -83,9 +69,9 @@ public final class Hex {
             int i = 0;
 
             for(int j = 0; j < len; ++i) {
-                int f = toDigit(data[j], j) << 4;
+                int f = toDigit(chars[j], j) << 4;
                 ++j;
-                f |= toDigit(data[j], j);
+                f |= toDigit(chars[j], j);
                 ++j;
                 out[i] = (byte)(f & 255);
             }
@@ -101,8 +87,5 @@ public final class Hex {
         } else {
             return digit;
         }
-    }
-
-    private Hex() {
     }
 }

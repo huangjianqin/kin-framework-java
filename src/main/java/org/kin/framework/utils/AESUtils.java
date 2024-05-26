@@ -13,11 +13,19 @@ import javax.crypto.spec.SecretKeySpec;
 import java.nio.charset.StandardCharsets;
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
-import java.util.Base64;
 import java.util.concurrent.TimeUnit;
 
 /**
+ * 对称加密算法
+ *
  * key要求是16个字节,即128位
+ *
+ * ECB模式是最简单的AES加密模式, 这种一对一的加密方式会导致安全性降低
+ * CBC模式需要一个随机数作为IV参数, 这样对同一份明文也可生成不同的密文, 大大提高了安全性
+ *
+ * NoPadding是一种不使用填充算法的加密模式. 这意味着输入数据将被直接编码为字节序列, 而不会受到填充的影响. 虽然NoPadding模式非常安全, 但它会导致填充算法无法正确地处理数据
+ * ZerosPadding是一种简单的填充算法, 它将输入数据的最后一个节替换为0. 这种填充方式适用于所有AES加密模式, 包括ECB、CBC和CTR模式. 缺点是填充后的字节数量可能超过原始输入数据的小
+ * PKCS5Padding是一种常见的填充算法, 用于填充数据以符合AES模式的要求. 这种填充方式使用一个固定长度的填充字节序列, 以确保输入数据被完全填充. 优点是它可以适应各种输入数据的大小, 但缺点是填充过程可能很慢
  *
  * @author huangjianqin
  * @date 2023/10/17
@@ -26,9 +34,9 @@ public final class AESUtils {
     /** AES/ECB/PKCS5Padding加密算法 */
     private static final String ECB_ALGORITHM = "AES/ECB/PKCS5Padding";
     /** AES/ECB/PKCS5Padding加密算法 */
-    private static final String CBC_ALGORITHM = "AES/ECB/PKCS5Padding";
+    private static final String CBC_ALGORITHM = "AES/CBC/PKCS5Padding";
     /** AES/ECB/NoPadding加密算法 */
-    private static final String ZERO_CBC_ALGORITHM = "AES/ECB/NoPadding";
+    private static final String ZERO_CBC_ALGORITHM = "AES/CBC/NoPadding";
     /** AES/GCM/NoPadding加密算法 */
     private static final String ZERO_GCM_ALGORITHM = "AES/GCM/NoPadding";
     /** 秘钥算法 */
@@ -58,502 +66,504 @@ public final class AESUtils {
                 }
             });
 
+    private AESUtils() {
+    }
+
     //------------------------------------------------------------------------------------------------------------------ECB
-
     /**
-     * 基于{@link #ECB_ALGORITHM}算法对{}进行明文{@code content}进行加密, 然后使用{@link Codec#HEX}对密文进行编码
+     * 基于{@link #ECB_ALGORITHM}算法对{}进行明文{@code content}进行加密, 然后使用{@link SecyCodec#HEX}对密文进行编码
      *
      * @param content  明文
      * @param password 密码
-     * @return {@link Codec#HEX}编码后的密文
+     * @return {@link SecyCodec#HEX}编码后的密文
      */
-    public static String weakEncryptECBBase64(String content,
+    public static String encryptAsBase64WithWeakECB(String content,
+                                                    String password) {
+        return encryptWithECB(content, password, null, SecyCodec.BASE64);
+    }
+
+    /**
+     * 基于{@link #ECB_ALGORITHM}算法对{@link SecyCodec#BASE64}编码后的密文{@code content}进行解密
+     *
+     * @param content  {@link SecyCodec#BASE64}编码后的密文
+     * @param password 密码
+     * @return 明文
+     */
+    public static String decryptBase64WithWeakECB(String content,
+                                                  String password) {
+        return decryptWithECB(content, password, null, SecyCodec.BASE64);
+    }
+
+    /**
+     * 基于{@link #ECB_ALGORITHM}算法对{}进行明文{@code content}进行加密, 然后使用{@link SecyCodec#HEX}对密文进行编码
+     *
+     * @param content  明文
+     * @param password 密码
+     * @return {@link SecyCodec#HEX}编码后的密文
+     */
+    public static String encryptAsHexWithWeakECB(String content,
+                                                 String password) {
+        return encryptWithECB(content, password, null, SecyCodec.HEX);
+    }
+
+    /**
+     * 基于{@link #ECB_ALGORITHM}算法对{@link SecyCodec#HEX}编码后的密文{@code content}进行解密
+     *
+     * @param content  {@link SecyCodec#HEX}编码后的密文
+     * @param password 密码
+     * @return 明文
+     */
+    public static String decryptHexWithWeakECB(String content,
+                                               String password) {
+        return decryptWithECB(content, password, null, SecyCodec.HEX);
+    }
+
+    /**
+     * 基于{@link #ECB_ALGORITHM}算法对{}进行明文{@code content}进行加密, 然后使用{@link SecyCodec#HEX}对密文进行编码
+     * 使用{@link #RNG_ALGORITHM}算法提高秘钥安全性
+     *
+     * @param content  明文
+     * @param password 密码
+     * @return {@link SecyCodec#HEX}编码后的密文
+     */
+    public static String encryptAsBase64WithECB(String content,
+                                                String password) {
+        return encryptWithECB(content, password, RNG_ALGORITHM, SecyCodec.BASE64);
+    }
+
+    /**
+     * 基于{@link #ECB_ALGORITHM}算法对{@link SecyCodec#BASE64}编码后的密文{@code content}进行解密
+     * 使用{@link #RNG_ALGORITHM}算法提高秘钥安全性
+     *
+     * @param content  {@link SecyCodec#BASE64}编码后的密文
+     * @param password 密码
+     * @return 明文
+     */
+    public static String decryptBase64WithECB(String content,
                                               String password) {
-        return encryptECB(content, password, null, Codec.BASE64);
+        return decryptWithECB(content, password, RNG_ALGORITHM, SecyCodec.BASE64);
     }
 
     /**
-     * 基于{@link #ECB_ALGORITHM}算法对{@link Codec#BASE64}编码后的密文{@code content}进行解密
-     *
-     * @param content  {@link Codec#BASE64}编码后的密文
-     * @param password 密码
-     * @return 明文
-     */
-    public static String weakDecryptECBBase64(String content,
-                                              String password) {
-        return decryptECB(content, password, null, Codec.BASE64);
-    }
-
-    /**
-     * 基于{@link #ECB_ALGORITHM}算法对{}进行明文{@code content}进行加密, 然后使用{@link Codec#HEX}对密文进行编码
+     * 基于{@link #ECB_ALGORITHM}算法对{}进行明文{@code content}进行加密, 然后使用{@link SecyCodec#HEX}对密文进行编码
+     * 使用{@link #RNG_ALGORITHM}算法提高秘钥安全性
      *
      * @param content  明文
      * @param password 密码
-     * @return {@link Codec#HEX}编码后的密文
+     * @return {@link SecyCodec#HEX}编码后的密文
      */
-    public static String weakEncryptECBHex(String content,
+    public static String encryptAsHexWithECB(String content,
+                                             String password) {
+        return encryptWithECB(content, password, RNG_ALGORITHM, SecyCodec.HEX);
+    }
+
+    /**
+     * 基于{@link #ECB_ALGORITHM}算法对{@link SecyCodec#HEX}编码后的密文{@code content}进行解密
+     * 使用{@link #RNG_ALGORITHM}算法提高秘钥安全性
+     *
+     * @param content  {@link SecyCodec#HEX}编码后的密文
+     * @param password 密码
+     * @return 明文
+     */
+    public static String decryptHexWithECB(String content,
                                            String password) {
-        return encryptECB(content, password, null, Codec.HEX);
-    }
-
-    /**
-     * 基于{@link #ECB_ALGORITHM}算法对{@link Codec#HEX}编码后的密文{@code content}进行解密
-     *
-     * @param content  {@link Codec#HEX}编码后的密文
-     * @param password 密码
-     * @return 明文
-     */
-    public static String weakDecryptECBHex(String content,
-                                           String password) {
-        return decryptECB(content, password, null, Codec.HEX);
-    }
-
-    /**
-     * 基于{@link #ECB_ALGORITHM}算法对{}进行明文{@code content}进行加密, 然后使用{@link Codec#HEX}对密文进行编码
-     * 使用{@link #RNG_ALGORITHM}算法提高秘钥安全性
-     *
-     * @param content  明文
-     * @param password 密码
-     * @return {@link Codec#HEX}编码后的密文
-     */
-    public static String encryptECBBase64(String content,
-                                          String password) {
-        return encryptECB(content, password, RNG_ALGORITHM, Codec.BASE64);
-    }
-
-    /**
-     * 基于{@link #ECB_ALGORITHM}算法对{@link Codec#BASE64}编码后的密文{@code content}进行解密
-     * 使用{@link #RNG_ALGORITHM}算法提高秘钥安全性
-     *
-     * @param content  {@link Codec#BASE64}编码后的密文
-     * @param password 密码
-     * @return 明文
-     */
-    public static String decryptECBBase64(String content,
-                                          String password) {
-        return decryptECB(content, password, RNG_ALGORITHM, Codec.BASE64);
-    }
-
-    /**
-     * 基于{@link #ECB_ALGORITHM}算法对{}进行明文{@code content}进行加密, 然后使用{@link Codec#HEX}对密文进行编码
-     * 使用{@link #RNG_ALGORITHM}算法提高秘钥安全性
-     *
-     * @param content  明文
-     * @param password 密码
-     * @return {@link Codec#HEX}编码后的密文
-     */
-    public static String encryptECBHex(String content,
-                                       String password) {
-        return encryptECB(content, password, RNG_ALGORITHM, Codec.HEX);
-    }
-
-    /**
-     * 基于{@link #ECB_ALGORITHM}算法对{@link Codec#HEX}编码后的密文{@code content}进行解密
-     * 使用{@link #RNG_ALGORITHM}算法提高秘钥安全性
-     *
-     * @param content  {@link Codec#HEX}编码后的密文
-     * @param password 密码
-     * @return 明文
-     */
-    public static String decryptECBHex(String content,
-                                       String password) {
-        return decryptECB(content, password, RNG_ALGORITHM, Codec.HEX);
+        return decryptWithECB(content, password, RNG_ALGORITHM, SecyCodec.HEX);
     }
 
     //------------------------------------------------------------------------------------------------------------------CBC
 
     /**
-     * 基于{@link #CBC_ALGORITHM}算法对{}进行明文{@code content}进行加密, 然后使用{@link Codec#HEX}对密文进行编码
+     * 基于{@link #CBC_ALGORITHM}算法对{}进行明文{@code content}进行加密, 然后使用{@link SecyCodec#HEX}对密文进行编码
      *
      * @param content  明文
      * @param password 密码
      * @param iv       iv向量参数
-     * @return {@link Codec#HEX}编码后的密文
+     * @return {@link SecyCodec#HEX}编码后的密文
      */
-    public static String weakEncryptCBCBASE64(String content,
+    public static String encryptAsBase64WithWeakCBC(String content,
+                                                    String password,
+                                                    String iv) {
+        return encryptWithCBC(content, password, null, iv, SecyCodec.BASE64);
+    }
+
+    /**
+     * 基于{@link #CBC_ALGORITHM}算法对{@link SecyCodec#BASE64}编码后的密文{@code content}进行解密
+     *
+     * @param content  {@link SecyCodec#BASE64}编码后的密文
+     * @param password 密码
+     * @param iv       iv向量参数
+     * @return 明文
+     */
+    public static String decryptBase64WithWeakCBC(String content,
+                                                  String password,
+                                                  String iv) {
+        return decryptWithCBC(content, password, null, iv, SecyCodec.BASE64);
+    }
+
+    /**
+     * 基于{@link #CBC_ALGORITHM}算法对{}进行明文{@code content}进行加密, 然后使用{@link SecyCodec#HEX}对密文进行编码
+     *
+     * @param content  明文
+     * @param password 密码
+     * @param iv       iv向量参数
+     * @return {@link SecyCodec#HEX}编码后的密文
+     */
+    public static String encryptAsHexWithWeakCBC(String content,
+                                                 String password,
+                                                 String iv) {
+        return encryptWithCBC(content, password, null, iv, SecyCodec.HEX);
+    }
+
+    /**
+     * 基于{@link #CBC_ALGORITHM}算法对{@link SecyCodec#HEX}编码后的密文{@code content}进行解密
+     *
+     * @param content  {@link SecyCodec#HEX}编码后的密文
+     * @param password 密码
+     * @param iv       iv向量参数
+     * @return 明文
+     */
+    public static String decryptHexWithWeakCBC(String content,
+                                               String password,
+                                               String iv) {
+        return decryptWithCBC(content, password, null, iv, SecyCodec.HEX);
+    }
+
+    /**
+     * 基于{@link #CBC_ALGORITHM}算法对{}进行明文{@code content}进行加密, 然后使用{@link SecyCodec#HEX}对密文进行编码
+     * 使用{@link #RNG_ALGORITHM}算法提高秘钥安全性
+     *
+     * @param content  明文
+     * @param password 密码
+     * @param iv       iv向量参数
+     * @return {@link SecyCodec#HEX}编码后的密文
+     */
+    public static String encryptAsBase64WithCBC(String content,
+                                                String password,
+                                                String iv) {
+        return encryptWithCBC(content, password, RNG_ALGORITHM, iv, SecyCodec.BASE64);
+    }
+
+    /**
+     * 基于{@link #CBC_ALGORITHM}算法对{@link SecyCodec#BASE64}编码后的密文{@code content}进行解密
+     * 使用{@link #RNG_ALGORITHM}算法提高秘钥安全性
+     *
+     * @param content  {@link SecyCodec#BASE64}编码后的密文
+     * @param password 密码
+     * @param iv       iv向量参数
+     * @return 明文
+     */
+    public static String decryptBase64WithCBC(String content,
                                               String password,
                                               String iv) {
-        return encryptCBC(content, password, null, iv, Codec.BASE64);
+        return decryptWithCBC(content, password, RNG_ALGORITHM, iv, SecyCodec.BASE64);
     }
 
     /**
-     * 基于{@link #CBC_ALGORITHM}算法对{@link Codec#BASE64}编码后的密文{@code content}进行解密
-     *
-     * @param content  {@link Codec#BASE64}编码后的密文
-     * @param password 密码
-     * @param iv       iv向量参数
-     * @return 明文
-     */
-    public static String weakDecryptCBCBASE64(String content,
-                                              String password,
-                                              String iv) {
-        return decryptCBC(content, password, null, iv, Codec.BASE64);
-    }
-
-    /**
-     * 基于{@link #CBC_ALGORITHM}算法对{}进行明文{@code content}进行加密, 然后使用{@link Codec#HEX}对密文进行编码
+     * 基于{@link #CBC_ALGORITHM}算法对{}进行明文{@code content}进行加密, 然后使用{@link SecyCodec#HEX}对密文进行编码
+     * 使用{@link #RNG_ALGORITHM}算法提高秘钥安全性
      *
      * @param content  明文
      * @param password 密码
      * @param iv       iv向量参数
-     * @return {@link Codec#HEX}编码后的密文
+     * @return {@link SecyCodec#HEX}编码后的密文
      */
-    public static String weakEncryptCBCHex(String content,
+    public static String encryptAsHexWithCBC(String content,
+                                             String password,
+                                             String iv) {
+        return encryptWithCBC(content, password, RNG_ALGORITHM, iv, SecyCodec.HEX);
+    }
+
+    /**
+     * 基于{@link #CBC_ALGORITHM}算法对{@link SecyCodec#HEX}编码后的密文{@code content}进行解密
+     * 使用{@link #RNG_ALGORITHM}算法提高秘钥安全性
+     *
+     * @param content  {@link SecyCodec#HEX}编码后的密文
+     * @param password 密码
+     * @param iv       iv向量参数
+     * @return 明文
+     */
+    public static String decryptHexWithCBC(String content,
                                            String password,
                                            String iv) {
-        return encryptCBC(content, password, null, iv, Codec.HEX);
-    }
-
-    /**
-     * 基于{@link #CBC_ALGORITHM}算法对{@link Codec#HEX}编码后的密文{@code content}进行解密
-     *
-     * @param content  {@link Codec#HEX}编码后的密文
-     * @param password 密码
-     * @param iv       iv向量参数
-     * @return 明文
-     */
-    public static String weakDecryptCBCHex(String content,
-                                           String password,
-                                           String iv) {
-        return decryptCBC(content, password, null, iv, Codec.HEX);
-    }
-
-    /**
-     * 基于{@link #CBC_ALGORITHM}算法对{}进行明文{@code content}进行加密, 然后使用{@link Codec#HEX}对密文进行编码
-     * 使用{@link #RNG_ALGORITHM}算法提高秘钥安全性
-     *
-     * @param content  明文
-     * @param password 密码
-     * @param iv       iv向量参数
-     * @return {@link Codec#HEX}编码后的密文
-     */
-    public static String encryptCBCBase64(String content,
-                                          String password,
-                                          String iv) {
-        return encryptCBC(content, password, RNG_ALGORITHM, iv, Codec.BASE64);
-    }
-
-    /**
-     * 基于{@link #CBC_ALGORITHM}算法对{@link Codec#BASE64}编码后的密文{@code content}进行解密
-     * 使用{@link #RNG_ALGORITHM}算法提高秘钥安全性
-     *
-     * @param content  {@link Codec#BASE64}编码后的密文
-     * @param password 密码
-     * @param iv       iv向量参数
-     * @return 明文
-     */
-    public static String decryptCBCBase64(String content,
-                                          String password,
-                                          String iv) {
-        return decryptCBC(content, password, RNG_ALGORITHM, iv, Codec.BASE64);
-    }
-
-    /**
-     * 基于{@link #CBC_ALGORITHM}算法对{}进行明文{@code content}进行加密, 然后使用{@link Codec#HEX}对密文进行编码
-     * 使用{@link #RNG_ALGORITHM}算法提高秘钥安全性
-     *
-     * @param content  明文
-     * @param password 密码
-     * @param iv       iv向量参数
-     * @return {@link Codec#HEX}编码后的密文
-     */
-    public static String encryptCBCHex(String content,
-                                       String password,
-                                       String iv) {
-        return encryptCBC(content, password, RNG_ALGORITHM, iv, Codec.HEX);
-    }
-
-    /**
-     * 基于{@link #CBC_ALGORITHM}算法对{@link Codec#HEX}编码后的密文{@code content}进行解密
-     * 使用{@link #RNG_ALGORITHM}算法提高秘钥安全性
-     *
-     * @param content  {@link Codec#HEX}编码后的密文
-     * @param password 密码
-     * @param iv       iv向量参数
-     * @return 明文
-     */
-    public static String decryptCBCHex(String content,
-                                       String password,
-                                       String iv) {
-        return decryptCBC(content, password, RNG_ALGORITHM, iv, Codec.HEX);
+        return decryptWithCBC(content, password, RNG_ALGORITHM, iv, SecyCodec.HEX);
     }
 
     //------------------------------------------------------------------------------------------------------------------zero CBC
 
     /**
-     * 基于{@link #ZERO_CBC_ALGORITHM}算法对{}进行明文{@code content}进行加密, 然后使用{@link Codec#BASE64}对密文进行编码
+     * 基于{@link #ZERO_CBC_ALGORITHM}算法对{}进行明文{@code content}进行加密, 然后使用{@link SecyCodec#BASE64}对密文进行编码
      *
      * @param content  明文
      * @param password 密码
      * @param iv       iv向量参数
-     * @return {@link Codec#BASE64}编码后的密文
+     * @return {@link SecyCodec#BASE64}编码后的密文
      */
-    public static String weakEncryptZeroCBCBase64(String content,
+    public static String encryptAsBase64WithWeakZeroCBC(String content,
+                                                        String password,
+                                                        String iv) {
+        return encryptWithZeroCBC(content, password, null, iv, SecyCodec.BASE64);
+    }
+
+    /**
+     * 基于{@link #ZERO_CBC_ALGORITHM}算法对{@link SecyCodec#BASE64}编码后的密文{@code content}进行解密
+     *
+     * @param content  {@link SecyCodec#BASE64}编码后的密文
+     * @param password 密码
+     * @param iv       iv向量参数
+     * @return 明文
+     */
+    public static String decryptBase64WithWeakZeroCBC(String content,
+                                                      String password,
+                                                      String iv) {
+        return decryptWithZeroCBC(content, password, null, iv, SecyCodec.BASE64);
+    }
+
+    /**
+     * 基于{@link #ZERO_CBC_ALGORITHM}算法对{}进行明文{@code content}进行加密, 然后使用{@link SecyCodec#HEX}对密文进行编码
+     *
+     * @param content  明文
+     * @param password 密码
+     * @param iv       iv向量参数
+     * @return {@link SecyCodec#HEX}编码后的密文
+     */
+    public static String encryptAsHexWithWeakZeroCBC(String content,
+                                                     String password,
+                                                     String iv) {
+        return encryptWithZeroCBC(content, password, null, iv, SecyCodec.HEX);
+    }
+
+    /**
+     * 基于{@link #ZERO_CBC_ALGORITHM}算法对{@link SecyCodec#HEX}编码后的密文{@code content}进行解密
+     *
+     * @param content  {@link SecyCodec#HEX}编码后的密文
+     * @param password 密码
+     * @param iv       iv向量参数
+     * @return 明文
+     */
+    public static String decryptHexWithWeakZeroCBC(String content,
+                                                   String password,
+                                                   String iv) {
+        return decryptWithZeroCBC(content, password, null, iv, SecyCodec.HEX);
+    }
+
+    /**
+     * 基于{@link #ZERO_CBC_ALGORITHM}算法对{}进行明文{@code content}进行加密, 然后使用{@link SecyCodec#BASE64}对密文进行编码
+     * 使用{@link #RNG_ALGORITHM}算法提高秘钥安全性
+     *
+     * @param content  明文
+     * @param password 密码
+     * @param iv       iv向量参数
+     * @return {@link SecyCodec#BASE64}编码后的密文
+     */
+    public static String encryptAsBase64WithZeroCBC(String content,
+                                                    String password,
+                                                    String iv) {
+        return encryptWithZeroCBC(content, password, RNG_ALGORITHM, iv, SecyCodec.BASE64);
+    }
+
+    /**
+     * 基于{@link #ZERO_CBC_ALGORITHM}算法对{@link SecyCodec#BASE64}编码后的密文{@code content}进行解密
+     * 使用{@link #RNG_ALGORITHM}算法提高秘钥安全性
+     *
+     * @param content  {@link SecyCodec#BASE64}编码后的密文
+     * @param password 密码
+     * @param iv       iv向量参数
+     * @return 明文
+     */
+    public static String decryptBase64WithZeroCBC(String content,
                                                   String password,
                                                   String iv) {
-        return encryptZeroCBC(content, password, null, iv, Codec.BASE64);
+        return decryptWithZeroCBC(content, password, RNG_ALGORITHM, iv, SecyCodec.BASE64);
     }
 
     /**
-     * 基于{@link #ZERO_CBC_ALGORITHM}算法对{@link Codec#BASE64}编码后的密文{@code content}进行解密
-     *
-     * @param content  {@link Codec#BASE64}编码后的密文
-     * @param password 密码
-     * @param iv       iv向量参数
-     * @return 明文
-     */
-    public static String weakDecryptZeroCBCBase64(String content,
-                                                  String password,
-                                                  String iv) {
-        return decryptZeroCBC(content, password, null, iv, Codec.BASE64);
-    }
-
-    /**
-     * 基于{@link #ZERO_CBC_ALGORITHM}算法对{}进行明文{@code content}进行加密, 然后使用{@link Codec#HEX}对密文进行编码
+     * 基于{@link #ZERO_CBC_ALGORITHM}算法对{}进行明文{@code content}进行加密, 然后使用{@link SecyCodec#HEX}对密文进行编码
+     * 使用{@link #RNG_ALGORITHM}算法提高秘钥安全性
      *
      * @param content  明文
      * @param password 密码
      * @param iv       iv向量参数
-     * @return {@link Codec#HEX}编码后的密文
+     * @return {@link SecyCodec#HEX}编码后的密文
      */
-    public static String weakEncryptZeroCBCHex(String content,
+    public static String encryptAsHexWithZeroCBC(String content,
+                                                 String password,
+                                                 String iv) {
+        return encryptWithZeroCBC(content, password, RNG_ALGORITHM, iv, SecyCodec.HEX);
+    }
+
+    /**
+     * 基于{@link #ZERO_CBC_ALGORITHM}算法对{@link SecyCodec#HEX}编码后的密文{@code content}进行解密
+     * 使用{@link #RNG_ALGORITHM}算法提高秘钥安全性
+     *
+     * @param content  {@link SecyCodec#HEX}编码后的密文
+     * @param password 密码
+     * @param iv       iv向量参数
+     * @return 明文
+     */
+    public static String decryptHexWithZeroCBC(String content,
                                                String password,
                                                String iv) {
-        return encryptZeroCBC(content, password, null, iv, Codec.HEX);
-    }
-
-    /**
-     * 基于{@link #ZERO_CBC_ALGORITHM}算法对{@link Codec#HEX}编码后的密文{@code content}进行解密
-     *
-     * @param content  {@link Codec#HEX}编码后的密文
-     * @param password 密码
-     * @param iv       iv向量参数
-     * @return 明文
-     */
-    public static String weakDecryptZeroCBCHex(String content,
-                                               String password,
-                                               String iv) {
-        return decryptZeroCBC(content, password, null, iv, Codec.HEX);
-    }
-
-    /**
-     * 基于{@link #ZERO_CBC_ALGORITHM}算法对{}进行明文{@code content}进行加密, 然后使用{@link Codec#BASE64}对密文进行编码
-     * 使用{@link #RNG_ALGORITHM}算法提高秘钥安全性
-     *
-     * @param content  明文
-     * @param password 密码
-     * @param iv       iv向量参数
-     * @return {@link Codec#BASE64}编码后的密文
-     */
-    public static String encryptZeroCBCBase64(String content,
-                                              String password,
-                                              String iv) {
-        return encryptZeroCBC(content, password, RNG_ALGORITHM, iv, Codec.BASE64);
-    }
-
-    /**
-     * 基于{@link #ZERO_CBC_ALGORITHM}算法对{@link Codec#BASE64}编码后的密文{@code content}进行解密
-     * 使用{@link #RNG_ALGORITHM}算法提高秘钥安全性
-     *
-     * @param content  {@link Codec#BASE64}编码后的密文
-     * @param password 密码
-     * @param iv       iv向量参数
-     * @return 明文
-     */
-    public static String decryptZeroCBCBase64(String content,
-                                              String password,
-                                              String iv) {
-        return decryptZeroCBC(content, password, RNG_ALGORITHM, iv, Codec.BASE64);
-    }
-
-    /**
-     * 基于{@link #ZERO_CBC_ALGORITHM}算法对{}进行明文{@code content}进行加密, 然后使用{@link Codec#HEX}对密文进行编码
-     * 使用{@link #RNG_ALGORITHM}算法提高秘钥安全性
-     *
-     * @param content  明文
-     * @param password 密码
-     * @param iv       iv向量参数
-     * @return {@link Codec#HEX}编码后的密文
-     */
-    public static String encryptZeroCBCHex(String content,
-                                           String password,
-                                           String iv) {
-        return encryptZeroCBC(content, password, RNG_ALGORITHM, iv, Codec.HEX);
-    }
-
-    /**
-     * 基于{@link #ZERO_CBC_ALGORITHM}算法对{@link Codec#HEX}编码后的密文{@code content}进行解密
-     * 使用{@link #RNG_ALGORITHM}算法提高秘钥安全性
-     *
-     * @param content  {@link Codec#HEX}编码后的密文
-     * @param password 密码
-     * @param iv       iv向量参数
-     * @return 明文
-     */
-    public static String decryptZeroCBCHex(String content,
-                                           String password,
-                                           String iv) {
-        return decryptZeroCBC(content, password, RNG_ALGORITHM, iv, Codec.HEX);
+        return decryptWithZeroCBC(content, password, RNG_ALGORITHM, iv, SecyCodec.HEX);
     }
 
     //------------------------------------------------------------------------------------------------------------------zero GCM
 
     /**
-     * 基于{@link #ZERO_GCM_ALGORITHM}算法对{}进行明文{@code content}进行加密, 然后使用{@link Codec#BASE64}对密文进行编码
+     * 基于{@link #ZERO_GCM_ALGORITHM}算法对{}进行明文{@code content}进行加密, 然后使用{@link SecyCodec#BASE64}对密文进行编码
      *
      * @param content  明文
      * @param password 密码
-     * @return {@link Codec#BASE64}编码后的密文
+     * @return {@link SecyCodec#BASE64}编码后的密文
      */
-    public static String weakEncryptZeroGCMBase64(String content,
+    public static String encryptAsBase64WithWeakZeroGCM(String content,
+                                                        String password) {
+        return encryptWithZeroGCM(content, password, null, null, SecyCodec.BASE64);
+    }
+
+    /**
+     * 基于{@link #ZERO_GCM_ALGORITHM}算法对{}进行明文{@code content}进行加密, 然后使用{@link SecyCodec#BASE64}对密文进行编码
+     *
+     * @param content  明文
+     * @param password 密码
+     * @param iv       iv向量参数
+     * @return {@link SecyCodec#BASE64}编码后的密文
+     */
+    public static String encryptAsBase64WithWeakZeroGCM(String content,
+                                                        String password,
+                                                        String iv) {
+        return encryptWithZeroGCM(content, password, null, iv, SecyCodec.BASE64);
+    }
+
+    /**
+     * 基于{@link #ZERO_GCM_ALGORITHM}算法对{@link SecyCodec#BASE64}编码后的密文{@code content}进行解密
+     *
+     * @param content  {@link SecyCodec#BASE64}编码后的密文
+     * @param password 密码
+     * @return 明文
+     */
+    public static String decryptBase64WithWeakZeroGCM(String content,
+                                                      String password) {
+        return decryptWithZeroGCM(content, password, null, SecyCodec.BASE64);
+    }
+
+    /**
+     * 基于{@link #ZERO_GCM_ALGORITHM}算法对{}进行明文{@code content}进行加密, 然后使用{@link SecyCodec#HEX}对密文进行编码
+     *
+     * @param content  明文
+     * @param password 密码
+     * @return {@link SecyCodec#HEX}编码后的密文
+     */
+    public static String encryptAsHexWithWeakZeroGCM(String content,
+                                                     String password) {
+        return encryptWithZeroGCM(content, password, null, null, SecyCodec.HEX);
+    }
+
+    /**
+     * 基于{@link #ZERO_GCM_ALGORITHM}算法对{}进行明文{@code content}进行加密, 然后使用{@link SecyCodec#HEX}对密文进行编码
+     *
+     * @param content  明文
+     * @param password 密码
+     * @param iv       iv向量参数
+     * @return {@link SecyCodec#HEX}编码后的密文
+     */
+    public static String encryptAsHexWithWeakZeroGCM(String content,
+                                                     String password,
+                                                     String iv) {
+        return encryptWithZeroGCM(content, password, null, iv, SecyCodec.HEX);
+    }
+
+    /**
+     * 基于{@link #ZERO_GCM_ALGORITHM}算法对{@link SecyCodec#HEX}编码后的密文{@code content}进行解密
+     *
+     * @param content  {@link SecyCodec#HEX}编码后的密文
+     * @param password 密码
+     * @return 明文
+     */
+    public static String decryptHexWithWeakZeroGCM(String content,
+                                                   String password) {
+        return decryptWithZeroGCM(content, password, null, SecyCodec.HEX);
+    }
+
+    /**
+     * 基于{@link #ZERO_GCM_ALGORITHM}算法对{}进行明文{@code content}进行加密, 然后使用{@link SecyCodec#BASE64}对密文进行编码
+     * 使用{@link #RNG_ALGORITHM}算法提高秘钥安全性
+     *
+     * @param content  明文
+     * @param password 密码
+     * @return {@link SecyCodec#BASE64}编码后的密文
+     */
+    public static String encryptAsBase64WithZeroGCM(String content,
+                                                    String password) {
+        return encryptWithZeroGCM(content, password, RNG_ALGORITHM, null, SecyCodec.BASE64);
+    }
+
+    /**
+     * 基于{@link #ZERO_GCM_ALGORITHM}算法对{}进行明文{@code content}进行加密, 然后使用{@link SecyCodec#BASE64}对密文进行编码
+     * 使用{@link #RNG_ALGORITHM}算法提高秘钥安全性
+     *
+     * @param content  明文
+     * @param password 密码
+     * @param iv       iv向量参数
+     * @return {@link SecyCodec#BASE64}编码后的密文
+     */
+    public static String encryptAsBase64WithZeroGCM(String content,
+                                                    String password,
+                                                    String iv) {
+        return encryptWithZeroGCM(content, password, RNG_ALGORITHM, iv, SecyCodec.BASE64);
+    }
+
+    /**
+     * 基于{@link #ZERO_GCM_ALGORITHM}算法对{@link SecyCodec#BASE64}编码后的密文{@code content}进行解密
+     * 使用{@link #RNG_ALGORITHM}算法提高秘钥安全性
+     *
+     * @param content  {@link SecyCodec#BASE64}编码后的密文
+     * @param password 密码
+     * @return 明文
+     */
+    public static String decryptBase64WithZeroGCM(String content,
                                                   String password) {
-        return encryptZeroGCM(content, password, null, null, Codec.BASE64);
+        return decryptWithZeroGCM(content, password, RNG_ALGORITHM, SecyCodec.BASE64);
     }
 
     /**
-     * 基于{@link #ZERO_GCM_ALGORITHM}算法对{}进行明文{@code content}进行加密, 然后使用{@link Codec#BASE64}对密文进行编码
+     * 基于{@link #ZERO_GCM_ALGORITHM}算法对{}进行明文{@code content}进行加密, 然后使用{@link SecyCodec#HEX}对密文进行编码
+     * 使用{@link #RNG_ALGORITHM}算法提高秘钥安全性
+     *
+     * @param content  明文
+     * @param password 密码
+     * @return {@link SecyCodec#HEX}编码后的密文
+     */
+    public static String encryptAsHexWithZeroGCM(String content,
+                                                 String password) {
+        return encryptWithZeroGCM(content, password, RNG_ALGORITHM, null, SecyCodec.HEX);
+    }
+
+    /**
+     * 基于{@link #ZERO_GCM_ALGORITHM}算法对{}进行明文{@code content}进行加密, 然后使用{@link SecyCodec#HEX}对密文进行编码
+     * 使用{@link #RNG_ALGORITHM}算法提高秘钥安全性
      *
      * @param content  明文
      * @param password 密码
      * @param iv       iv向量参数
-     * @return {@link Codec#BASE64}编码后的密文
+     * @return {@link SecyCodec#HEX}编码后的密文
      */
-    public static String weakEncryptZeroGCMBase64(String content,
-                                                  String password,
-                                                  String iv) {
-        return encryptZeroGCM(content, password, null, iv, Codec.BASE64);
+    public static String encryptAsHexWithZeroGCM(String content,
+                                                 String password,
+                                                 String iv) {
+        return encryptWithZeroGCM(content, password, RNG_ALGORITHM, iv, SecyCodec.HEX);
     }
 
     /**
-     * 基于{@link #ZERO_GCM_ALGORITHM}算法对{@link Codec#BASE64}编码后的密文{@code content}进行解密
+     * 基于{@link #ZERO_GCM_ALGORITHM}算法对{@link SecyCodec#HEX}编码后的密文{@code content}进行解密
+     * 使用{@link #RNG_ALGORITHM}算法提高秘钥安全性
      *
-     * @param content  {@link Codec#BASE64}编码后的密文
+     * @param content  {@link SecyCodec#HEX}编码后的密文
      * @param password 密码
      * @return 明文
      */
-    public static String weakDecryptZeroGCMBase64(String content,
-                                                  String password) {
-        return decryptZeroGCM(content, password, null, Codec.BASE64);
-    }
-
-    /**
-     * 基于{@link #ZERO_GCM_ALGORITHM}算法对{}进行明文{@code content}进行加密, 然后使用{@link Codec#HEX}对密文进行编码
-     *
-     * @param content  明文
-     * @param password 密码
-     * @return {@link Codec#HEX}编码后的密文
-     */
-    public static String weakEncryptZeroGCMHex(String content,
+    public static String decryptHexWithZeroGCM(String content,
                                                String password) {
-        return encryptZeroGCM(content, password, null, null, Codec.HEX);
-    }
-
-    /**
-     * 基于{@link #ZERO_GCM_ALGORITHM}算法对{}进行明文{@code content}进行加密, 然后使用{@link Codec#HEX}对密文进行编码
-     *
-     * @param content  明文
-     * @param password 密码
-     * @param iv       iv向量参数
-     * @return {@link Codec#HEX}编码后的密文
-     */
-    public static String weakEncryptZeroGCMHex(String content,
-                                               String password,
-                                               String iv) {
-        return encryptZeroGCM(content, password, null, iv, Codec.HEX);
-    }
-
-    /**
-     * 基于{@link #ZERO_GCM_ALGORITHM}算法对{@link Codec#HEX}编码后的密文{@code content}进行解密
-     *
-     * @param content  {@link Codec#HEX}编码后的密文
-     * @param password 密码
-     * @return 明文
-     */
-    public static String weakDecryptZeroGCMHex(String content,
-                                               String password) {
-        return decryptZeroGCM(content, password, null, Codec.HEX);
-    }
-
-    /**
-     * 基于{@link #ZERO_GCM_ALGORITHM}算法对{}进行明文{@code content}进行加密, 然后使用{@link Codec#BASE64}对密文进行编码
-     * 使用{@link #RNG_ALGORITHM}算法提高秘钥安全性
-     *
-     * @param content  明文
-     * @param password 密码
-     * @return {@link Codec#BASE64}编码后的密文
-     */
-    public static String encryptZeroGCMBase64(String content,
-                                              String password) {
-        return encryptZeroGCM(content, password, RNG_ALGORITHM, null, Codec.BASE64);
-    }
-
-    /**
-     * 基于{@link #ZERO_GCM_ALGORITHM}算法对{}进行明文{@code content}进行加密, 然后使用{@link Codec#BASE64}对密文进行编码
-     * 使用{@link #RNG_ALGORITHM}算法提高秘钥安全性
-     *
-     * @param content  明文
-     * @param password 密码
-     * @param iv       iv向量参数
-     * @return {@link Codec#BASE64}编码后的密文
-     */
-    public static String encryptZeroGCMBase64(String content,
-                                              String password,
-                                              String iv) {
-        return encryptZeroGCM(content, password, RNG_ALGORITHM, iv, Codec.BASE64);
-    }
-
-    /**
-     * 基于{@link #ZERO_GCM_ALGORITHM}算法对{@link Codec#BASE64}编码后的密文{@code content}进行解密
-     * 使用{@link #RNG_ALGORITHM}算法提高秘钥安全性
-     *
-     * @param content  {@link Codec#BASE64}编码后的密文
-     * @param password 密码
-     * @return 明文
-     */
-    public static String decryptZeroGCMBase64(String content,
-                                              String password) {
-        return decryptZeroGCM(content, password, RNG_ALGORITHM, Codec.BASE64);
-    }
-
-    /**
-     * 基于{@link #ZERO_GCM_ALGORITHM}算法对{}进行明文{@code content}进行加密, 然后使用{@link Codec#HEX}对密文进行编码
-     * 使用{@link #RNG_ALGORITHM}算法提高秘钥安全性
-     *
-     * @param content  明文
-     * @param password 密码
-     * @return {@link Codec#HEX}编码后的密文
-     */
-    public static String encryptZeroGCMHex(String content,
-                                           String password) {
-        return encryptZeroGCM(content, password, RNG_ALGORITHM, null, Codec.HEX);
-    }
-
-    /**
-     * 基于{@link #ZERO_GCM_ALGORITHM}算法对{}进行明文{@code content}进行加密, 然后使用{@link Codec#HEX}对密文进行编码
-     * 使用{@link #RNG_ALGORITHM}算法提高秘钥安全性
-     *
-     * @param content  明文
-     * @param password 密码
-     * @param iv       iv向量参数
-     * @return {@link Codec#HEX}编码后的密文
-     */
-    public static String encryptZeroGCMHex(String content,
-                                           String password,
-                                           String iv) {
-        return encryptZeroGCM(content, password, RNG_ALGORITHM, iv, Codec.HEX);
-    }
-
-    /**
-     * 基于{@link #ZERO_GCM_ALGORITHM}算法对{@link Codec#HEX}编码后的密文{@code content}进行解密
-     * 使用{@link #RNG_ALGORITHM}算法提高秘钥安全性
-     *
-     * @param content  {@link Codec#HEX}编码后的密文
-     * @param password 密码
-     * @return 明文
-     */
-    public static String decryptZeroGCMHex(String content,
-                                           String password) {
-        return decryptZeroGCM(content, password, RNG_ALGORITHM, Codec.HEX);
+        return decryptWithZeroGCM(content, password, RNG_ALGORITHM, SecyCodec.HEX);
     }
 
     //------------------------------------------------------------------------------------------------------------------
@@ -567,10 +577,10 @@ public final class AESUtils {
      * @param codec        密文编解码类型
      * @return 编码后的密文
      */
-    private static String encryptECB(String content,
-                                     String password,
-                                     String rngAlgorithm,
-                                     Codec codec) {
+    private static String encryptWithECB(String content,
+                                         String password,
+                                         String rngAlgorithm,
+                                         SecyCodec codec) {
         try {
             //创建密码器
             Cipher cipher = Cipher.getInstance(ECB_ALGORITHM);
@@ -596,10 +606,10 @@ public final class AESUtils {
      * @param codec        密文编解码类型
      * @return 明文
      */
-    private static String decryptECB(String content,
-                                     String password,
-                                     String rngAlgorithm,
-                                     Codec codec) {
+    private static String decryptWithECB(String content,
+                                         String password,
+                                         String rngAlgorithm,
+                                         SecyCodec codec) {
         try {
             //创建密码器
             Cipher cipher = Cipher.getInstance(ECB_ALGORITHM);
@@ -623,11 +633,11 @@ public final class AESUtils {
      * @param codec        密文编解码类型
      * @return 编码后的密文
      */
-    private static String encryptCBC(String content,
-                                     String password,
-                                     String rngAlgorithm,
-                                     String iv,
-                                     Codec codec) {
+    private static String encryptWithCBC(String content,
+                                         String password,
+                                         String rngAlgorithm,
+                                         String iv,
+                                         SecyCodec codec) {
         try {
             //创建密码器
             Cipher cipher = Cipher.getInstance(CBC_ALGORITHM);
@@ -655,11 +665,11 @@ public final class AESUtils {
      * @param codec        密文编解码类型
      * @return 明文
      */
-    private static String decryptCBC(String content,
-                                     String password,
-                                     String rngAlgorithm,
-                                     String iv,
-                                     Codec codec) {
+    private static String decryptWithCBC(String content,
+                                         String password,
+                                         String rngAlgorithm,
+                                         String iv,
+                                         SecyCodec codec) {
         try {
             //创建密码器
             Cipher cipher = Cipher.getInstance(CBC_ALGORITHM);
@@ -683,11 +693,11 @@ public final class AESUtils {
      * @param codec        密文编解码类型
      * @return 编码后的密文
      */
-    private static String encryptZeroCBC(String content,
-                                         String password,
-                                         String rngAlgorithm,
-                                         String iv,
-                                         Codec codec) {
+    private static String encryptWithZeroCBC(String content,
+                                             String password,
+                                             String rngAlgorithm,
+                                             String iv,
+                                             SecyCodec codec) {
         try {
             //创建密码器
             Cipher cipher = Cipher.getInstance(ZERO_CBC_ALGORITHM);
@@ -723,11 +733,11 @@ public final class AESUtils {
      * @param codec        密文编解码类型
      * @return 明文
      */
-    private static String decryptZeroCBC(String content,
-                                         String password,
-                                         String rngAlgorithm,
-                                         String iv,
-                                         Codec codec) {
+    private static String decryptWithZeroCBC(String content,
+                                             String password,
+                                             String rngAlgorithm,
+                                             String iv,
+                                             SecyCodec codec) {
         try {
             //创建密码器
             Cipher cipher = Cipher.getInstance(ZERO_CBC_ALGORITHM);
@@ -751,11 +761,11 @@ public final class AESUtils {
      * @param codec        密文编解码类型
      * @return 编码后的密文
      */
-    private static String encryptZeroGCM(String content,
-                                         String password,
-                                         String rngAlgorithm,
-                                         String iv,
-                                         Codec codec) {
+    private static String encryptWithZeroGCM(String content,
+                                             String password,
+                                             String rngAlgorithm,
+                                             String iv,
+                                             SecyCodec codec) {
         try {
             //创建密码器
             Cipher cipher = Cipher.getInstance(ZERO_GCM_ALGORITHM);
@@ -795,10 +805,10 @@ public final class AESUtils {
      * @param codec        密文编解码类型
      * @return 明文
      */
-    private static String decryptZeroGCM(String content,
-                                         String password,
-                                         String rngAlgorithm,
-                                         Codec codec) {
+    private static String decryptWithZeroGCM(String content,
+                                             String password,
+                                             String rngAlgorithm,
+                                             SecyCodec codec) {
         try {
             //密文解码
             byte[] ivTagCipherBytes = codec.decode(content);
@@ -896,52 +906,5 @@ public final class AESUtils {
         byte[] iv = new byte[IV_LEN];
         secureRandom.nextBytes(iv);
         return iv;
-    }
-
-    //----------------------------------------------------------------------------------------------------------------------------------------
-
-    /** 密文编解码 */
-    private enum Codec {
-        BASE64() {
-            @Override
-            byte[] decode(String s) {
-                return Base64.getDecoder().decode(s);
-            }
-
-            @Override
-            String encode(byte[] bytes) {
-                return Base64.getEncoder().encodeToString(bytes);
-            }
-        },
-        HEX() {
-            @Override
-            byte[] decode(String s) {
-                return Hex.decode(s);
-            }
-
-            @Override
-            String encode(byte[] bytes) {
-                return Hex.encode(bytes);
-            }
-        };
-
-        /**
-         * 密文解码
-         *
-         * @param s 编码后的密文
-         * @return 原始密文
-         */
-        abstract byte[] decode(String s);
-
-        /**
-         * 原始密文编码
-         *
-         * @param bytes 原始密文
-         * @return 编码后的密文
-         */
-        abstract String encode(byte[] bytes);
-    }
-
-    private AESUtils() {
     }
 }

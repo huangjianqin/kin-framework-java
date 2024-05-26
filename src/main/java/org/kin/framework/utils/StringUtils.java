@@ -1,7 +1,6 @@
 package org.kin.framework.utils;
 
 import javax.annotation.Nullable;
-import java.nio.charset.StandardCharsets;
 import java.util.Collection;
 import java.util.Map;
 import java.util.concurrent.ThreadLocalRandom;
@@ -178,21 +177,21 @@ public class StringUtils {
      * 字符串转16进制字符串
      */
     public static String str2HexStr(String str) {
-        return Hex.encode(str);
+        return HexUtils.encode(str);
     }
 
     /**
      * 16进制字符串转字符串
      */
     public static String hexStr2Str(String hexStr) {
-        return Hex.decode2String(hexStr);
+        return HexUtils.decode2String(hexStr);
     }
 
     /**
      * 16进制字符串转bytes
      */
     public static byte[] hexStr2Bytes(String hexStr) {
-        return Hex.decode(hexStr);
+        return HexUtils.decode(hexStr);
     }
 
     /**

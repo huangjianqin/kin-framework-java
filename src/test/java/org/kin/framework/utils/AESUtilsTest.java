@@ -16,19 +16,19 @@ public class AESUtilsTest {
         String ecbHexEncryption = "5879FE39515593B6E13B14D345168579521B43CFD2042521D9538A8A61C897082068968640B34BC80B70199131F235B2";
         String ecbBase64Encryption = "WHn+OVFVk7bhOxTTRRaFeVIbQ8/SBCUh2VOKimHIlwggaJaGQLNLyAtwGZEx8jWy";
 
-        System.out.println(AESUtils.encryptECBHex(content, salt));
-        System.out.println(AESUtils.decryptECBHex(ecbHexEncryption, salt));
+        System.out.println(AESUtils.encryptAsHexWithECB(content, salt));
+        System.out.println(AESUtils.decryptHexWithECB(ecbHexEncryption, salt));
         System.out.println("---");
 
-        System.out.println(AESUtils.encryptECBBase64(content, salt));
-        System.out.println(AESUtils.decryptECBBase64(ecbBase64Encryption, salt));
+        System.out.println(AESUtils.encryptAsBase64WithECB(content, salt));
+        System.out.println(AESUtils.decryptBase64WithECB(ecbBase64Encryption, salt));
         System.out.println("---");
 
         System.out.println();
         System.out.println("------------------GCM------------------");
         String gcmBase64Encryption = "RCvH7RQe41NvZrp4kokByFhSmO+CHf8g9zS9H22RS04z7y1plKp/f7wV7HdX8f0NInTKZbLxLSli6u1o";
-        System.out.println(AESUtils.encryptZeroGCMBase64(content, salt));
-        System.out.println(AESUtils.decryptZeroGCMBase64(gcmBase64Encryption, salt));
+        System.out.println(AESUtils.encryptAsBase64WithZeroGCM(content, salt));
+        System.out.println(AESUtils.decryptBase64WithZeroGCM(gcmBase64Encryption, salt));
         System.out.println("---");
     }
 }
