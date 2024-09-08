@@ -232,7 +232,7 @@ public final class MurmurHash3 {
      */
     public static long hash64(final String data) {
         final byte[] origin = data.getBytes(StandardCharsets.UTF_8);
-        return hash32(origin, 0, origin.length, DEFAULT_SEED);
+        return hash64(origin, 0, origin.length, DEFAULT_SEED);
     }
 
     /**
@@ -245,7 +245,6 @@ public final class MurmurHash3 {
     public static long hash64(final long data) {
         long hash = DEFAULT_SEED;
         long k = Long.reverseBytes(data);
-        final int length = LONG_BYTES;
         // mix functions
         k *= C1;
         k = Long.rotateLeft(k, R1);
@@ -253,7 +252,7 @@ public final class MurmurHash3 {
         hash ^= k;
         hash = Long.rotateLeft(hash, R2) * M + N1;
         // finalization
-        hash ^= length;
+        hash ^= LONG_BYTES;
         hash = fmix64(hash);
         return hash;
     }
@@ -267,14 +266,13 @@ public final class MurmurHash3 {
      */
     public static long hash64(final int data) {
         long k1 = Integer.reverseBytes(data) & (-1L >>> 32);
-        final int length = INTEGER_BYTES;
         long hash = DEFAULT_SEED;
         k1 *= C1;
         k1 = Long.rotateLeft(k1, R1);
         k1 *= C2;
         hash ^= k1;
         // finalization
-        hash ^= length;
+        hash ^= INTEGER_BYTES;
         hash = fmix64(hash);
         return hash;
     }
