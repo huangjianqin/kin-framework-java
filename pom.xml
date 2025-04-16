@@ -256,6 +256,7 @@
             <!--                            &lt;!&ndash; 跟原来的.jar合并 &ndash;&gt;-->
             <!--                            <goal>assembly</goal>-->
             <!--                        </goals>-->
+            <!--                        <phase>package</phase>-->
             <!--                    </execution>-->
             <!--                </executions>-->
             <!--                <configuration>-->
